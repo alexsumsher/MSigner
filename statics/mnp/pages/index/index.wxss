@@ -1,0 +1,106 @@
+/**index.wxss**/
+.userinfo {
+  position: absolute;
+  top: 1rem;
+  right: 20rpx;
+}
+
+.cover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cover_img {  
+  width: 400rpx;
+  height: 400rpx;
+}
+
+.userinfo-avatar {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  float: right;
+}
+
+.userinfo-nickname {
+  color: #aaa;
+  font-size: 70%;
+}
+
+.ltbtn_group {
+  position: absolute;
+  top: 20rpx;
+  left: 20rpx
+}
+.ltbtn_group image {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 32rpx;
+  box-shadow: black 0px 0px 5px;
+}
+
+.contbox {
+  margin: 12px;
+}
+
+.centerboard {
+  border: solid #194052 2px;
+  border-radius: 5px;
+  background-color: #cee8f0;
+  text-align: center;
+  padding: 12px;
+  width: 80%;
+  margin-top: 1em;
+}
+
+.unsigned {
+  color: red;
+}
+.signed {
+  color: #0f3242;
+}
+
+view.itemlist {
+  border-bottom: #194052 solid 1px;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+.fbtn {
+  float:right;
+  background-color:#22cc22;
+  border:green solid 1px;
+  border-radius:30px;
+  margin:10px 3px 10px 3px;
+  padding:15px 10px 15px 10px;
+
+}
+
+.title {
+  font-size: larger;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+.input_ctrl {
+  margin: 10px;
+  border-bottom: solid 1px #c4e0ec;
+}
+
+.bottom {
+  position: fixed;
+  display: flex;
+  bottom: 50rpx;
+  left: 20rpx;
+  color: #a3a4a5;
+}
+
+.section {
+  margin: 20rpx 0rpx;
+}
+
+.intertip {
+  font-size: 80%;
+}

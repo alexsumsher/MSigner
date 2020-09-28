@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <META HTTP-EQUIV="Pragma" CONTENT="no-cache">
+  <META name="viewport" content="initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0,user-scalable=no,width=device-width"   />
+  <meta name="app-mobile-web-app-capable"  content="yes" />
+  <meta name="app-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <!-- 引入样式 -->
+  <link rel="stylesheet" href="https://unpkg.com/mint-ui@1/lib/style.css">
+</head>
+<body>
+  <div id="app">
+    <mt-header fixed title="会议管理">
+        <mt-button icon="more" slot="right" @click.native="moreClick"></mt-button>
+    </mt-header>
+    <div style="margin-top:46px;">
+    </div>
+  </div>
+</body>
+  <!-- 先引入 Vue -->
+  <script src="https://unpkg.com/vue@1/dist/vue.js"></script>
+  <!-- 引入组件库 -->
+  <script src="https://unpkg.com/mint-ui@1/lib/index.js"></script>
+  <script>
+    new Vue({
+      el: '#app',
+      methods: {
+        moreClick: function() {
+          this.$toast('Hello world!')
+        }
+      }
+    })
+  </script>
+</html>

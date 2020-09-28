@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-control" content="no-cache">
+    <meta http-equiv="Cache" content="no-cache">
+    <title>DEBUG</title>
+    <link rel="stylesheet" href="https://cdn.bootcss.com/zui/1.6.0/css/zui.min.css">
+    <script src="https://cdn.bootcss.com/zui/1.6.0/lib/jquery/jquery.js"></script>
+    <script src="https://cdn.bootcss.com/zui/1.6.0/js/zui.min.js"></script>
+    <script src="/statics/js/GLs_v2.js"></script>
+</head>
+<body>
+<nav class="navbar navbar-default" role="navigation" style="background-color: #ffffff;min-height:60px;font-size:20px;">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" onclick="_sysfuncs._index()" style="height:60px;"><img src="../statics/logo.png" height="40px" class="img-rounded" alt="圆角图片"></a>
+    </div>
+    <div class="collapse navbar-collapse navbar-collapse-example">
+      <ul class="nav navbar-nav" style="margin-top:10px;">
+        <li><a href="#" onclick="go_page('allusers')">测试：用户表</a></li>
+        <li><a href="#" onclick="go_page('teacher_class')">教师分配班级</a></li>
+        <li><a href="#" onclick="go_page('dodebug')">指令群测试</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<div class="container">
+  <div class="row">
+    <div class="col-md-2 col-sm-4"></div>
+    <div class="col-md-10 col-sm-10">
+
+      <div class="panel divpage" id="allusers">
+      <div>
+        <h2 style="text-align: center;">
+          用户表 | 教师用户
+        </h2>
+      </div>
+      <hr>
+      <div class="row">
+        <div class="col-md-2">
+        </div>
+        <div class="col-md-4 btn-toolbar">
+          <div class="input-group">
+					<input type="number" name="usertype" class="form-control" placeholder="用户类型" value=2>
+					<input type="number" name="departid" class="form-control" placeholder="部门id" value=1>
+					<input type="number" name="level" class="form-control" placeholder="等级" value=1>
+          </div>
+        </div>
+      </div>
+      <table id="ulister" class="table">
+        <thead>
+          <tr>
+            <th>手机号</th><th>性别</th><th>id卡号</th><th>注册日期</th><th>名字</th><th>wxid</th><th>uid</th><th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+      <div id="ulister_bar"></div>
+      </div>
+
+      <div class="panel divpage" id="teacher_class">
+			<!--
+			实现教师登录帐号[本地]和教师帐号[userid]对接
+			local_teachers <> cloud_teachers
+			-->
+      </div>
+
+      <div class="panel divpage" id="dodebug">
+        <div class="panel-heading">
+          <i class="icon icon-list"></i>
+          <span class="title">测试</span>
+        </div>
+        <div class="panel-body no-padding">
+					<select id="testtype" class="form-control" value="">
+						<option value="get_userinfo"></option>
+						<option value="get_userinfo">get_userinfo</option>
+						<option value="get_school">get_school</option>
+						<option value="get_dptinfobyId">get_dptinfobyId</option>
+					</select>
+					<p id="requrl"></p>
+					<p id="reqname"></p>
+          <form id="debug_form" action="" method="POST" onsubmit="">
+          </form>
+        </div>
+        <div class="panel-footer">
+          <button type="button" class="btn btn-primary" id="dotest">提交</button>
+					<hr>
+					<div id="debuginfo"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="dlg_ass_teacher">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span><span class="sr-only">关闭</span></button>
+        <h4 class="modal-title">????</h4>
+      </div>
+      <div class="modal-body">
+				<form id="frm_ass_teacher">
+				</form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default go_submit" data-dismiss="modal">关闭</button>
+        <button type="button" class="btn btn-primary">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+<script src="/statics/js/debug.js"></script>
+</html>

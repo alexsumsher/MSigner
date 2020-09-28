@@ -1,0 +1,5 @@
+<!--pages/beacontest/ibeacon.wxml-->
+<view class="container">
+  <button bindtap='doTest'>do test</button>
+  <button bindtap='endTest'>end test</button>
+</view>

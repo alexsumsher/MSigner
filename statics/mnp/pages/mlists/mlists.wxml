@@ -1,0 +1,47 @@
+<!--pages/mlists/mlists.wxml-->
+<view class="listview-container">
+  <view wx:for="{{meetings}}" wx:key="mid" class="playlog-item">
+      <view class="dotline">
+        <view class="line"></view>
+        <view class="dot"></view>
+        <view class="rline">
+          <text>{{item.name}}</text>
+          <button class="mini-btn rbtn" type="default" size="mini" bindtap="ask_off" data-mid="{{item.mid}}" disabled="{{item.off}}">请假</button>
+        </view>
+      </view>
+      <view class="info_time">
+        <text>{{item.nextdtime}}</text>
+      </view>
+      <view class="info_place">
+        <text>{{item.roomname}}</text>
+      </view>
+  </view>
+  <!--
+  <view class="playlog-item" data-mtid="t1">
+      <view class="dotline">
+        <view class="line"></view>
+        <view class="dot"></view>
+        <view class="rline"><text>语文组周例会</text></view>
+      </view>
+      <view class="info_time">
+        <text>8:00</text>
+      </view>
+      <view class="info_place">
+        <text>大会议室</text>
+      </view>
+  </view>
+  <view class="playlog-item" data-mtid="t2">
+      <view class="dotline">
+        <view class="line"></view>
+        <view class="dot"></view>
+        <view class="rline"><text>研讨会</text></view>
+      </view>
+      <view class="info_time">
+        <text>18:00</text>
+      </view>
+      <view class="info_place">
+        <text>大会议室</text>
+      </view>
+  </view>
+  -->
+</view>

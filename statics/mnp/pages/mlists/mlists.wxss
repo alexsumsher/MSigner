@@ -1,0 +1,61 @@
+/* pages/mlists/mlists.wxss */
+
+.listview-container {
+  margin: 10rpx 10rpx;
+  padding: 30px 0px;
+  color: #888;
+}
+
+.playlog-item {
+  display: flex;
+  height: 120rpx;
+}
+
+.playlog-item .dotline {
+  width: 35px;
+  position: relative;
+}
+
+.playlog-item .dotline .line {
+  width: 1px;
+  height: 100%;
+  background: #ccc;
+  position: absolute;
+  top: 0;
+  left: 36rpx; 
+}
+
+.playlog-item .dotline .rline {
+  text-align: center;
+  width: 720rpx;
+  margin-left: 30rpx;
+  margin-bottom: 60rpx;
+  height: 70rpx;
+  border-bottom: 1px solid #ddd;
+}
+
+.playlog-item .dotline .dot {
+  width: 40rpx;
+  height: 40rpx; 
+  background: #30ac63;
+  position: absolute; 
+  top: 50rpx; 
+  left: 20rpx; 
+  border-radius: 50%; 
+}
+
+.playlog-item .info_time {
+  height: 36rpx;
+  margin-top: 80rpx;
+}
+
+.playlog-item .info_place {
+  position: fixed;
+  margin-top: 80rpx;
+  right: 100rpx;
+  height: 36rpx;
+}
+
+.playlog-item .rbtn {
+  margin-bottom: -10rpx;
+}

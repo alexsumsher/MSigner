@@ -1,0 +1,99 @@
+<!--index.wxml-->
+<view class="container">
+  <view class="userinfo">
+    <button wx:if="{{!hasUserInfo && canIUse}}" open-type="getUserInfo" bindgetuserinfo="getUserInfo"> 获取头像昵称 </button>
+    <block wx:else>
+      <image bindtap="bindViewTap" class="userinfo-avatar" src="{{userInfo.avatarUrl}}" mode="cover"></image>
+      <view class="userinfo-nickname"><text>{{userInfo.nickName}}</text></view>
+    </block>
+  </view>
+  <view class="ltbtn_group">
+    <image class="rbtn" src="../../resource/common_reflash.png" mode="aspectFit" bindtap="meeteng_reflash" />
+  </view>
+  <view wx:if="{{ustatus>=2}}"  class="centerboard">
+    <view class="title">
+      <text>{{sch_name}}最近的会议</text>
+    </view>
+    
+    <view class="itemlist">
+     <!--
+      <view class="fbtn" ontap="goSign3" data-mid="{{next_meeting.mid}}">
+        <text>签到</text>
+      </view>
+    -->
+      <text class="llbl">名称：</text><text class="lcont">{{next_meeting.name}}\n</text>
+      <text class="llbl">时间：</text><text class="lcont">{{next_meeting.nextdtime}}\n</text>
+      <text class="llbl">地点：</text><text class="lcont">{{next_meeting.roomname}}\n</text>
+      <text class="llbl">状态：</text><text class="lcont" class="{{status}}">{{sign_text}}</text>
+    </view>
+
+    <view class="contbox">
+      <view class="section">
+        <button class="mainbtn" type="warn" bindtap='goSign3' data-mid="{{next_meeting.mid}}">签到</button>
+      </view>
+      <view class="section">
+        <button class="mainbtn" type="primary" bindtap='mymeetings'>今日会议列表</button>
+      </view>
+      <view class="section">
+        <button class="mainbtn" type="primary" bindtap="logout">退出</button>
+      </view>
+    </view>
+  </view>
+  <view wx:elif="{{ustatus==1}}">
+    <input class="input_ctrl" placeholder="名字或手机号" data-key="ukey" bindinput='act_keyin' value="{{ukey}}"/>
+    <input password="true" class="input_ctrl" placeholder="密码" data-key="password" bindinput='act_keyin' value="{{password}}"/>
+    <!--
+    <picker class="input_ctrl" bindchange="sch_choose" value="{{index}}" range="{{sch_array}}" range-key='title'>
+      <view class="picker">
+          点击-选择学校：{{sch_name}}
+      </view>
+    </picker>
+    -->
+    <view class="section">
+      <label class="radio" bindtap="infostore">
+        <radio class="rowinput" checked="{{storemode}}" />保存名字（或手机）密码
+      </label>
+    </view>
+    <button class="mainbtn" type="primary" bindtap='login2'>手动登陆</button>
+    <view class="section">
+      <button class="mainbtn" type="primary" bindtap='reg_block'>转到注册</button>
+    </view>
+  </view>
+  <view wx:else>
+    <view class="contbox">
+      <view class="intertip">注意：由于首次从小程序登入，请输入您的名字或者手机号，同时定义您的密码，完成匹配和注册。</view>
+      <input class="input_ctrl" placeholder="名字或手机号" data-key="ukey" bindinput='act_keyin' value=""/>
+      <input password="true" class="input_ctrl" placeholder="密码" data-key="password" bindinput='act_keyin' value=""/>
+      <!--
+      <picker class="input_ctrl" bindchange="sch_choose" value="{{index}}" range="{{sch_array}}" range-key='title'>
+        <view class="picker">
+           点击选择学校：{{sch_name}}
+        </view>
+      </picker>
+      -->
+      <button class="mainbtn" type="primary" bindtap='doreg'>注册</button>
+      <view class="section">
+        <button class="mainbtn" type="primary" bindtap="login_block">转到登陆</button>
+      </view>
+    </view>
+  </view>
+  <!--
+  <view class="contbox">
+    <button class="mainbtn" type="primary" size="default" bindtap="goSign3">会议签到</button>
+  </view>
+  -->
+
+
+  <!--
+  <button class="mainbtn" size="mini" bindtap='goBeacon'>启动测试</button>
+  -->
+  <view class="bottom">
+    <view class="intertip">
+      <text>基于腾讯智慧校园的会议签到系统小程序端(华拓)</text>
+      <view>https://attend.hitouch.cn</view>
+      <view>
+      <text>version: 1.1</text>
+      </view>
+    </view>
+  </view>
+</view>

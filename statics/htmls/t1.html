@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-control" content="no-cache">
+    <meta http-equiv="Cache" content="no-cache">
+    <title>系统管理</title>
+	<link href="https://cdn.bootcss.com/zui/1.9.0/css/zui.min.css" rel="stylesheet">
+	<script src="https://cdn.bootcss.com/zui/1.9.0/lib/jquery/jquery.js"></script>
+	<script src="https://cdn.bootcss.com/zui/1.9.0/js/zui.min.js"></script>
+    <script src="../js/GLs_v3.1.js"></script>
+    <style type="text/css">
+		div.separate {margin-bottom: 3px}
+		div.maintitle {font-size: 24px;color:black}
+		div.pagebody {padding-top: 5px}
+		.pagehead {text-align: center}
+		button.backhome {float: left}
+		button.backpage {float: left}
+		.sepbottom {margin-bottom: 6px;border-bottom: solid 1px #bbbbbbbb}
+		.septop {margin-top: 6px;border-top: solid 1px #bbbbbbbb}
+		.img_btn {border-left: solid 1px #bbbbbb;border-top: solid 1px #bbbbbb;border-radius: 10px;padding: 5px;}
+    </style>
+</head>
+<body>
+<header id="header" class="bg-primary">
+	<div class="navbar navbar-default" role="navigation" style="min-height:60px;font-size:20px;">
+	  <div class="container-fluid">
+		<div class="navbar-header">
+		  <a class="navbar-brand" style="height:60px;"><img id="logoimg" src="" height="40px" class="img-rounded" alt="LOGO"></a>
+		</div>
+		<div class="collapse navbar-collapse">
+			<ul class="nav navbar-nav" id="navlist" style="margin-top:10px;margin-right:2em">
+				<li><a class="topactive" onclick="go_page('meeting')">会议管理</a></li>
+				<li><a onclick="go_page('mroom')">会议室管理</a></li>
+				<li><a onclick="go_page('attenders')">人员管理</a></li>
+				<li></li>
+				<li style="font-size:50%;margin-left:2em;"><a href="#" onclick="document.location.href = document.location.href"><i class="icon icon-spin icon-refresh"></i>刷新页面</a></li>
+			</ul>
+			<div class="nav navbar-nav navbar-right" style="margin-top:10px;">
+				<span class="maintitle" id="logotext"></span>
+				<sup id="userinfo" class="label label-primary"></sup>
+				<img id="userhead" src="" style="height: 40px;border-radius: 20px;vertical-align: top;">
+			</div>
+		</div>
+	  </div>
+	</div>
+</header>
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 col-sm-10">
+
+    <div class="panel divpage" id="meeting">
+      <div class="sepbottom">
+				<span style="float: right;margin-right: 1rem;margin-top: -1rem;color:darkcyan;" data-toggle="modal" data-target="#dlg_config"><i class="icon icon-cogs icon-2x img_btn"></i></span>
+        <h1 id="test_a" style="text-align: center;margin-bottom:30px;">
+          会议管理
+        </h1>
+      </div>
+		<div class="row " style="margin-bottom: 10px;">
+			<div class="col-md-9 btn-toolbar" id="examchoose">
+				<div class="input-group" id="examlist_filter">
+					<select class="form-control" name="sel_year">
+						<option value=0>选择学年0</option>
+						<option value=1>选择学年1</option>
+						<option value=2>选择学年2</option>
+					</select>
+					<span class="input-group-addon fix-border fix-padding"></span>
+					<select class="form-control" name="sel_term">
+						<option value=0>选择学期</option>
+					</select>
+					<span class="input-group-addon fix-border fix-padding"></span>
+					<select class="form-control" name="sel_grade">
+						<option value=0>选择年级</option>
+					</select>
+					<span class="input-group-addon fix-border fix-padding"></span>
+					<select class="form-control" name="sel_course">
+						<option value=0>选择学科</option>
+					</select>
+				</div>
+				<div class="btn-group">
+					<button type="button" class="btn" id="meeting_add"><i class="icon icon-plus"></i>新增会议</button>
+				</div>
+			</div>
+		</div>
+		<div id="tablezoom" class="septop">
+			<table id="meeting_tbl" class="table">
+				<thead>
+				  <tr>
+					<th>会议名称</th><th>类型</th><th>会议室</th><th>会议时间</th><th>会议时长</th><th>签到限制</th><th>操作</th>
+				  </tr>
+				</thead>
+				<tbody>
+				</tbody>
+			</table>
+			<div id="meeting_bar"></div>
+		</div>
+		</div>
+
+		<div class="panel divpage" id="mroom">
+			<div class="pagehead">
+				<button class="btn btn-link btn-lg backhome" type="button"><i class="icon icon-backward"></i></button>
+				<h1 style="margin-bottom:30px;">
+					<span>会议室管理</span>
+				</h1>
+			</div>
+			<hr>
+			<div class="btn-toolbar" style="margin-left: 2px">
+				<div class="btn-group">
+					<button class="btn">-</button>
+					<button class="btn">-</button>
+				</div>
+				<div class="btn-group">
+					<button class="btn" title="新增会议室" id="btn_addmroom"><i class="icon icon-plus-sign"></i></button>
+				</div>
+			</div>
+			<div class="pagebody">
+				<table class="table" id="mroom_tbl">
+					<thead>
+					  <tr>
+						<th>会议室名称</th><th>支持蓝牙签到</th><th>蓝牙标签</th><th>人数上限</th><th>下次会议</th><th>下次会议时间</th><th>操作</th>
+					  </tr>
+					</thead>
+					<tbody>
+					</tbody>
+				</table>
+				<div id="mroom_bar"></div>
+			</div>
+		</div>
+
+		<div class="panel divpage" id="attenders">
+			<div class="pagehead">
+				<button class="btn btn-link btn-lg backhome" type="button"><i class="icon icon-backward"></i></button>
+				<h1 style="margin-bottom:30px;">
+					<span>参会人员管理</span>|<span id="cur_meeting"></span>
+				</h1>
+			</div>
+			<hr>
+			<div class="btn-toolbar" style="margin-left: 2px">
+				<div class="btn-group">
+					<button class="btn">模式A</button>
+					<button class="btn">模式B</button>
+				</div>
+				<div class="btn-group">
+					<button class="btn" title="新增用户" id="btn_set_attenders"><i class="icon icon-plus-sign"></i></button>
+				</div>
+			</div>
+			<div class="pagebody">
+				<table class="table" id="attenders_tbl">
+					<thead>
+					  <tr>
+						<th>用户编号</th><th>名字</th><th>管理者</th><th>签到时间</th><th>操作</th>
+					  </tr>
+					</thead>
+					<tbody>
+					</tbody>
+				</table>
+				<div id="attenders_bar">
+				</div>
+			</div>
+		</div>
+		
+		<div class="panel divpage" id="room_schedule">
+			<div class="pagehead">
+				<button class="btn btn-link btn-lg backpage" type="button"><i class="icon icon-backward"></i></button>
+				<h2 style="margin-bottom:30px;">
+					<span>会议室时间表</span>|<span id="rs_cur_rname">?</span>
+				</h1>
+			</div>
+			<hr>
+			<div class="btn-toolbar" style="margin-left: 2px">
+				<div class="btn-group">
+					<button class="btn">-</button>
+					<button class="btn">-</button>
+				</div>
+			<div class="input-group">
+				<input type="date" name="schedule_date" class="form-control">
+				<span class="input-group-btn">
+					<button class="btn btn-default" type="button" id="go_for_schedule">查看</button>
+				</span>
+			</div>
+			</div>
+			<div class="pagebody" id="schedule_listor">
+			</div>
+		</div>
+
+		<div class="panel divpage" id="meeting_create">
+			<div class="pagehead">
+				<!--<button class="btn btn-link btn-lg backpage" type="button"><i class="icon icon-backward"></i></button>-->
+				<h2 style="margin-bottom:30px;">
+					<span id="mc_title">建立会议</span>
+				</h1>
+			</div>
+			<hr>
+			<div class="row pagebody" id="meeting_cdata">
+				<div class="col-md-3"></div>
+				<div class="col-md-6">
+					<div class="input-group">
+						<span class="input-group-addon">会议名称</span>
+						<input type="text" name="name" class="form-control">
+					</div>
+					<div class="input-group">
+						<span class="input-group-addon">会议类型</span>
+						<select name="rpmode" class="form-control">
+							<option value="0">一次性会议</option>
+							<option value="1">按周会议</option>
+							<option value="2">按月会议</option>
+						</select>
+					</div>
+					<div class="input-group mode0">
+						<span class="input-group-addon">会议日期</span>
+						<input type="date" name="ondate" class="form-control">
+					</div>
+					<div class="input-group">
+						<span class="input-group-addon">会议时间</span>
+						<input type="time" name="ontime" class="form-control">
+					</div>
+					<div class="input-group">
+						<span class="input-group-addon">会议时长</span>
+						<input type="number" name="mtime" class="form-control" value=120>
+					</div>
+					<div class="input-group mode2" style="display: none">
+						<span class="input-group-addon">会议日期</span>
+						<input type="text" name="rparg" class="form-control">
+					</div>
+					<div class="input-group mode2" style="display: none">
+						<span class="input-group-addon">周期开始</span>
+						<input type="date" name="p_start" class="form-control">
+					</div>
+					<div class="input-group mode2" style="display: none">
+						<span class="input-group-addon">周期结束</span>
+						<input type="date" name="p_end" class="form-control">
+					</div>
+					<button class="btn btn-primary btn-block" id="mc_chooseroom">[未指定会议室(点击选择)]</button>
+					<button class="btn btn-block" id="mc_extend"><i class="icon icon-chevron-down"></i>更多<i class="icon icon-chevron-down"></i></button>
+					<div class="input-group mc_ext" style="display: none">
+						<span class="input-group-addon">提前签到（分钟）</span>
+						<input type="number" name="sign_pre" class="form-control">
+					</div>
+					<div class="input-group mc_ext" style="display: none">
+						<span class="input-group-addon">允许签到（分钟）</span>
+						<input type="number" name="sign_limit" class="form-control">
+					</div>
+					<div style="margin-top: 10px">
+						<button class="btn btn-success pull-right" id="mc_ok">OK</button>
+						<button class="btn btn-warning backpage" id="mc_cancel">CANCEL</button>
+					</div>
+				</div>
+				<div class="col-md-6"></div>
+			</div>
+		</div>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="dlg_config">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span><span class="sr-only">操作设置</span></button>
+        <h4 class="modal-title">操作设置</h4>
+      </div>
+      <div class="modal-body">
+			<form id="frm_config">
+				<div class="switch">
+					<input type="checkbox" id="conf_show_deleted">
+					<label>显示已删除考试</label>
+				</div>
+			</form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+        <button type="button" class="btn btn-primary  go_submit">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="dlg_mroom_selector">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span><span class="sr-only">操作设置</span></button>
+        <h4 class="modal-title">房间选择</h4>
+      </div>
+      <div class="modal-body">
+		<form id="frm_mroom_selector">
+			<div class="panel panel-warning" id="ms_room_filter">
+				<label class="radio-inline">
+					<input type="radio" name="chooseby" value="0">不指定会议室
+				</label>
+				<label class="radio-inline">
+					<input type="radio" name="chooseby" value="1" checked>列出所有会议室
+				</label>
+				<label class="radio-inline">
+					<input type="radio" name="chooseby" value="2">按照指定的日期时间筛选可用
+				</label>
+				<hr>
+				<label class="radio-inline">
+					<input type="radio" name="choose_sign_mode" value="0" checked>无需签到会议室
+				</label>
+				<label class="radio-inline">
+					<input type="radio" name="choose_sign_mode" value="1">蓝牙签到会议室
+				</label>
+				<hr>
+				<a class="btn btn-block" id="ms_show_mrooms"><i class="icon icon-search"></i>搜索会议室</a>
+			</div>
+			<div class="panel panel-info" id="room_listout">
+				<select name="ms_mroom_list" class="form-control" size=10>
+				</select>
+			</div>
+		</form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+        <button type="button" class="btn btn-primary  go_submit">确定</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="dlg_mroom">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span><span class="sr-only">操作设置</span></button>
+        <h4 class="modal-title">会议室</h4>
+      </div>
+      <div class="modal-body">
+		<form id="frm_mroom" action="/api/mroom">
+			<div class="input-group">
+				<input type="text" name="name" class="form-control" placeholder="会议室名称">
+				<input type="number" name="allow_people" class="form-control" placeholder="人数上限" title="设置为0表示不限制人数" value=0>
+				<input type="text" name="room_identifier" class="form-control" placeholder="签到关键字" disabled="true">
+			</div>
+			<div class="input-group">
+				<select name="sign_mode" class="form-control">
+					<option value="0">无签到</option>
+					<option value="1">蓝牙签到</option>
+				</select>
+			</div>
+		</form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+        <button type="button" class="btn btn-primary  go_submit">提交</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="dlg_attender">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span><span class="sr-only">操作设置</span></button>
+        <h4 class="modal-title">参会人员</h4>
+      </div>
+      <div class="modal-body row">
+		<div class="col-md-4" id="dlg_atdr_tree" style="border-right: 2px solid #999999">
+			<ul class="tree" data-ride="tree" id="depart_tree">
+			  <li>
+				<a href="#">水果</a>
+				<ul>
+				  <li><a href="#">苹果</a></li>
+				  <li>
+					<a href="#">热带水果</a>
+					<ul>
+					</ul>
+				  </li>
+				  <li><a href="#">梨子</a></li>
+				</ul>
+			  </li>
+			  <li><a href="#">粥饭</a></li>
+			</ul>
+		</div>
+		<div class="col-md-4" id="dlg_atdr_list" style="border-right: 2px solid #999999">
+			<select class="form-control" id="all_in_dpart" multiple>
+			</select>
+		</div>
+		<div class="col-md-4" id="dlg_atdr_seled">
+		</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+        <button type="button" class="btn btn-primary go_submit">提交</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+<script>
+page_initor("meeting");
+_PGC.bind_ini("meeting", function(){
+	_PGC.settriggers({
+		'title': 'test_a',
+		'sel_year': '[name="sel_year"]',
+	});
+});
+</script>
+</html>

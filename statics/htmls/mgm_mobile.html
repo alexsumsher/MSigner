@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>会议管理系统</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- 定制版 ionic 样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/vonic@2.0.0-beta.11/dist/vonic.min.css">
+
+    <!-- 依赖库 axios/vue/vue-router -->
+    <script src="https://unpkg.com/axios@0.15.3/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/vue@2.1.10/dist/vue.min.js"></script>
+    <script src="https://unpkg.com/vue-router@2.2.1/dist/vue-router.min.js"></script>
+    <script src="https://unpkg.com/vuex@2.2.1/dist/vuex.min.js"></script>
+
+    <!-- vonic 核心文件 -->
+    <script src="https://unpkg.com/vonic@2.0.0-beta.11/dist/vonic.min.js"></script>
+	<style>
+		i.icon_blur: {color: #DDD;}
+		i.icon_active: {color: #19c13b}
+		i.icon.icon_inline: {margin: 0px 10px;}
+		span.item-note {min-width: 100px}
+		div.scrollfix {margin-top: 50px}
+	</style>
+	<script>
+		var _gbl_env = {};
+		var _departments = null;
+		var _dpmap = new Object();
+		var _dps_onsel = ""; // 当前备选列表
+	</script>
+  </head>
+  <body>
+    <!-- mount point -->
+    <von-app></von-app>
+
+    <style>
+	h2 {
+		font-family: Candara,Calibri,Segoe,Segoe UI,Optima,Arial,sans-serif;
+		color: #888;
+	}
+	.page.has-navbar .page-content {
+		padding-top: 100px;
+	}
+	.cells .row {
+		padding: 20px 0;
+		font-size: large;
+	}
+	img.icon {
+		width: 40px;
+		height: 40px;
+		border-bottom: 1px solid #cccccc;
+		margin-bottom: 6px;
+	}
+	.button-option {
+		border-radius: unset;
+		box-shadow: unset;
+	}
+	.button-option:before {
+		content: "\25A3";
+		float:left;
+	}
+    </style>
+
+	<!-- page templates -->
+    <script type="text/x-template" id="cells">
+      <div class="page has-navbar" v-nav="{title: '会议管理系统v.3', showMenuButton: true}">
+        <div class="page-content">
+			<div>欢迎：<span class="padding" v-text="uname"></span>老师！</div>
+			<div class="page-cells">
+          <!-- 3 x 2 -->
+          <cells :items="entrances" :on-cell-click="onCellClick" row="2"></cells>
+			</div>
+        </div>
+      </div>
+    </script>
+	
+	<script type="text/x-template" id="new_meeting1">
+		<div class="page has-navbar" v-nav="{title: '新增会议-单次', showBackButton: true}">
+			<div class="page-content">
+				<von-input type="text" v-model="m_name" label="会议名称"></von-input>
+				<datepicker v-model="m_ondate" label="会议日" date-format="yyyy-mm-dd"></datepicker>
+				<von-input type="text" v-model="m_ontime" label="会议时间"></von-input>
+				<von-input type="text" v-model="m_cost" label="会议时长（分钟）"></von-input>
+				<von-input type="text" v-model="m_signpre" label="提前签到（分钟）"></von-input>
+				<von-input type="text" v-model="m_signlimit" label="允许签到（分钟）"></von-input>
+				<md-button class="button button-positive button-block button-option" @click.native="for_room">{{m_roomname}}</md-button>
+				<md-button class="button button-assertive button-block" @click.native="submeeting1">提交</md-button>
+			</div>
+		</div>
+	</script>
+	
+	<script type="text/x-template" id="new_meeting2">
+		<div class="page has-navbar" v-nav="{title: '新增会议-周期', showBackButton: true}">
+			<div class="page-content">
+				<von-input type="text" v-model="m_name" label="会议名称"></von-input>
+				<md-button class="button button-positive button-block button-option" @click.native="for_mtype">{{m_typename}}</md-button>
+				<md-button class="button button-positive button-block button-option" @click.native="for_room">{{m_roomname}}</md-button>
+				<von-input type="text" v-model="m_ondate" label="会议日期"></von-input>
+				<von-input type="text" v-model="m_ontime" label="会议时间"></von-input>
+				<von-input type="text" v-model="m_cost" label="会议时长（分钟）"></von-input>
+				<datepicker v-model="p_start" label="周期起始日" date-format="yyyy-mm-dd"></datepicker>
+				<datepicker v-model="p_end" label="周期结束日" date-format="yyyy-mm-dd"></datepicker>
+				<md-button class="button button-assertive button-block" @click.native="submeeting2">提交</md-button>
+				<div>{{info}}</div>
+			</div>
+		</div>
+	</script>
+
+    <script type="text/x-template" id="mlists">
+      <div class="page has-navbar" v-nav="{title: '会议列表', showBackButton: true}" showBackButton="true">
+        <div class="page-content">
+			<list>
+				<item class="item-icon-right" v-for="(meeting,index) in all_meetings" v-bind:key="meeting.mid">
+					{{index}} - {{meeting.name}}[{{meeting.rpmode_txt}}]
+					<i class="icon icon_inline ion-information-circled" v-on:click="meetinginfo(index)" style="margin-right: 100px"></i>
+					<i class="icon icon_inline ion-person-add" v-on:click="setattender(index)" style="margin-right: 50px"></i>
+					<i class="icon icon_inline ion-calendar" v-on:click="getattenders(index)"></i>
+				</item>
+			</list>
+        </div>
+      </div>
+    </script>
+	
+    <script type="text/x-template" id="mgm_mrooms">
+      <div class="page has-navbar" v-nav="{title: '会议室s', showBackButton: true}" showBackButton="true">
+        <div class="page-content">
+			<list>
+				<item class="item-icon-right" v-for="(mroom,index) in all_mrooms" v-bind:key="mroom.roomid">
+					{{index}} - {{mroom.name}}
+					<span class="item-note" v-on:click="mroominfo(index)">item note</span>
+					<i class="icon ion-ios-arrow-right" style="color: #DDD;"></i>
+				</item>
+			</list>
+        </div>
+      </div>
+    </script>
+	
+	<script type="text/x-template" id="userlist">
+		<div class="page has-navbar" v-nav="{title: '学校教师列表', showMenuButton: true, menuButtonText: 'OK', onMenuButtonClick: userok}">
+			<scroll class="page-content scrollfix" :on-infinite="onInfinite">
+				<item class="item-icon-right" v-for="(user,index) in users" v-bind:key="user.uid" >
+					{{index}} - {{user.username}} - {{user.dpname}}({{user.selsta}})
+					<span class="item-note" v-on:click="adduser(index)">
+					选择教师
+					<i class="icon ion-checkmark-circled"></i>
+					</span>
+				</item>
+				<div v-if="page == -1" slot="infinite" class="text-center">没有更多数据</div>
+			</scroll>
+		</div>
+	</script>
+	
+	<script type="text/x-template" id="meetingusers">
+		<div class="page has-navbar" v-nav="{title: '参会者', showBackButton: true}">
+			<div class="page-content">
+				<list>
+					<item class="item-icon-right" v-for="(attender,index) in attenders" v-bind:key="attender.aid">
+						{{attender.username}}: {{attender.signtime || "未签到或缺席"}}
+						<span class="item-note" >{{attender.status_txt}}</span>
+						<i class="icon icon_inline ion-close-round" v-on:click="kickuser(index)" style="margin-right: 50px"></i>
+						<i class="icon icon_inline ion-more" style="color: #DDD;" v-on:click="detailuser(index)"></i>
+					</item>
+				</list>
+			</div>
+		</div>
+	</script>
+
+	<script type="text/x-template" id="dplist">
+		<div class="page has-navbar" v-nav="{title: '部门表', showMenuButton: true, menuButtonText: 'OK', onMenuButtonClick: dpsok}" style="overflow-y: scroll">
+			<von-checkbox :options="dpitems" v-model="chosenDps" theme="positive"></von-checkbox>
+			<p>chosen topics: {{ chosenDps}}</p>
+		</div>
+	</script>
+	
+	<script src="../js/mgm_mobile_2.js"></script>
+	
+	<script src="../js/massist.js"></script>
+	
+	<!-- working scripts -->
+	<script>
+		d_cmds.load_departments();
+	</script>
+
+  </body>
+</html>
