@@ -2,4 +2,4 @@ __pycache__/
 project/
 *.py[cod]
 *$py.class
-sysconfig.py
+sys_config.log

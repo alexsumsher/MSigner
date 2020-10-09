@@ -345,10 +345,13 @@ class mnode(object):
                 self.status2 = self.__class__.STA2_OVERP
             return self.status
         # quickly judge if day diff over 1
+        # update: extending into next month was forgotten: (2020-10-01 - 2020-09-30 = -29(day))
+        same_month = self.nextdtime.month == now.month
         delta_date = self.nextdtime.day - now.day
-        if delta_date > 1:
+        if same_month is False or delta_date > 1:
             self.status = self.__class__.STA_IDLE
             return self.status
+
         delta = self.nextdtime - now
         delta_days = delta.days
         # 注：dalta.days == 0指的是两个时间点差值小于24小时，因此当两个时间点尽管跨日(delta_date>=1)，但时间差小于24小时，则days依然为0
