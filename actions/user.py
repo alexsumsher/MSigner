@@ -78,7 +78,7 @@ class user_actions(Qer):
 			return False
 		# check time and set status
 		stime = self._fixed_date(stime)
-		minfo = METTING._get_vals(mid, column='nextdtime,sign_pre,sign_limit')
+		minfo = METTING._vget(mid, 'nextdtime,sign_pre,sign_limit', cols=3)
 		if not minfo:
 			loger.error("meeting not found with mid: %s" % mid)
 			return False
@@ -103,7 +103,7 @@ class user_actions(Qer):
 			return False
 		if mcount == -1:
 			mcount = _meeting.counting
-		sign_pre,sign_limit = METTING._get_vals(mid, 'sign_pre,sign_limit')
+		sign_pre,sign_limit = METTING._vget(mid, 'sign_pre,sign_limit', cols=2)
 		#pre_sec = minfo[0] * 60
 		#limit_sec = minfo[1] * 60
 		#delta = stime - _meeting_time

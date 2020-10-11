@@ -162,7 +162,7 @@ class user_tbl(simple_tbl):
 		for user in users:
 			value_list.append(dict(userid=user['userid'], wxuserid=user['wxuserid'], objid=objid, username=user['username'], departid=user['departid'], phonenumber=user.get("cellphone", "")))
 		print(value_list)
-		return cls._batch_insert(value_list, autocolumn="userid,wxuserid,objid,username,departid,phonenumber", singlecmd=sep)
+		return cls.huge_insert(value_list, autocolumn="userid,wxuserid,objid,username,departid,phonenumber", singlecmd=sep)
 
 	@classmethod
 	def uid2openid(cls, userids, autokick=True):

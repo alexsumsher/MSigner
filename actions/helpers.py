@@ -49,7 +49,7 @@ class m_announcer(Thread):
 		_plen = len(self.sequence)
 		for i in range(_plen):
 			n = self.sequence.pop(0)
-			roomname = MROOM.vget(n.mroom, 'name') or ""
+			roomname = MROOM._vget(n.mroom, 'name') or ""
 			wxusers = ATTENDERS.wx_attender(n.mid, n.counting) # couting for repeateds
 			if not wxusers:
 				loger.warning("无用户参会！%s" % n.name)

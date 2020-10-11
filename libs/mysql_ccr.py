@@ -224,34 +224,40 @@ class com_con(object):
         checkcon.close()
         return True
 
-    def resetcon(self, con):
-        loger.warn("a con to be reset！")
+    def resetcon(self, con, autoappend=True):
+        logging.warn("a con to be reset！")
+        self.staticlist.remove(con)
         try:
-            con.close()
-        except:
-            pass
-        finally:
             con = mcr.connect(**self.cif)
+            if autoappend:
+                self.staticlist.append(con)
+        except:
+            logging.error("Not able to create a new connection!")
+            return None
         return con
 
     def __batch_recovery(self):
+        # if lite mode: connections less than 4, force release first and return
         logging.warn("on __batch_recovery!")
-        for _ in range(len(self.conlist)):
-            self.conlist.pop()
+        self.conlist.clear()
+        #for _ in range(len(self.conlist)):
+        #    self.conlist.pop()
         for _ in range(len(self.staticlist)):
             con = self.staticlist.pop()
             if not con.is_connected():
+                logging.warn("a con is not connectable, remove!")
                 del con
                 continue
-            if con.unread_result:
+            if con.unread_results:
                 con.get_rows()
             con.mark = 0
             self.conlist.push(con)
-        for _ in range(self.length - len(self.conlist)):
-            self.conlist.append(mcr.connect(**self.cif))
+            logging.info("recover a con!")
+        for _ in range(self.length - len(self.staticlist)):
+            con = mcr.connect(**self.cif)
+            self.conlist.append(con)
+            self.staticlist.append(con)
             time.sleep(0.05)
-        for _ in self.conlist:
-            self.staticlist.append(_)
         self.finger = 0
         self.length = len(self.conlist)
         return self.finger
@@ -262,7 +268,9 @@ class com_con(object):
     __repr__ = __str__
 
     def __take_kick_2(self, con=None):
-        logging.debug('con_pool=>status: %s\tfinger: %s\t; usage: %s/%s' % (self.status, self.finger, len(self.conlist), len(self.staticlist)))
+        # works for flexable mode
+        if self.debug:
+            logging.debug('con_pool=>status: %s\tfinger: %s\t; usage: %s/%s' % (self.status, self.finger, len(self.conlist), len(self.staticlist)))
         #   work on flexible mode
         def newcon():
             ncon = mcr.connect(**self.cif)
@@ -326,11 +334,12 @@ class com_con(object):
     def __take_kick_1(self, con=None):
         if con:
             self.conlist.append(con)
-            con.mark = 0
+            #con.mark = 0
             self.finger -= 1
-            logging.debug("release con: %s" % str(self))
+            #logging.debug("release con: %s" % str(self))
             return self.finger
-        logging.debug('conpool=>status: %s\tfinger: %s\t; usage: %s/%s' % (self.status, self.finger, len(self.conlist), len(self.staticlist)))
+        if self.debug:
+            logging.debug('conpool=>status: %s\tfinger: %s\t; usage: %s/%s' % (self.status, self.finger, len(self.conlist), len(self.staticlist)))
         self.ilock.acquire()
         if self.status <= 0:
             self.__inilist()
@@ -346,7 +355,8 @@ class com_con(object):
                 self.status = 0
                 self.ilock.release()
                 return None
-            if self.finger >= self.length - 1:
+            # length==2 会导致出错
+            if self.length >5 and self.finger >= self.length - 1:
                 if self.__fix_cons() is False:
                     self.ilock.release()
                     return None
@@ -357,26 +367,37 @@ class com_con(object):
         return con
 
     def __enter__(self):
-        self.elock.acquire()
+        self.elock.acquire(timeout=3)
         if self.curcon is None:
             logging.info('con for with is still None, create it!')
-            self.curcon = mcr.connect(self.cif)
-        else:
+            self.curcon = mcr.connect(**self.cif)
             self.curcon.ready = 1
+            return self.curcon
+        try:
+            self.curcon.ping(reconnect=True, attempts=1, delay=0)
+        except mcr.InterfaceError:
+            logging.warning("__enter__ connection is down and not able to reconnect")
+            self.curcon = None
+            #raise RuntimeError("ENTER CON Failure!")
         return self.curcon
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        print(exc_val)
+        # print(exc_val)
         self.elock.release()
         self.curcon.ready = 0
         return True
 
     def shutdown(self):
         self.ilock.acquire()
+        logging.warning("shutting down com_con instance!")
         for _ in range(len(self.staticlist)):
             con = self.staticlist.pop()
+            print(f"con {con.connection_id} to close.")
             con.close()
-            logging.info("shutdown connection %s" % con.connection_id)
+            time.sleep(0.05)
+        if self.curcon:
+            print(f"con {self.curcon.connection_id} to close.")
+            self.curcon.close()
         self.status = 0
         self.ilock.release()
 
@@ -393,6 +414,7 @@ class com_con(object):
             if con.unread_result:
                 logging.debug("release a con with unread_result")
                 con.get_rows()
+            con.mark = 0
             return self.__take_kick(con)
         else:
             return self.__batch_recovery()
@@ -413,11 +435,14 @@ class com_con(object):
                 rt = cur.rowcount
             cur.close()
         except Exception as e:
-            print(e)
+            logging.error(e)
+            logging.error("Failure Execute: " + cmd)
             if not con.is_connected():
-                print("con is not connected!")
+                logging.error("Execute db Failure for [con is not connected!]")
                 #self.staticlist.remove(con)
                 con = self.resetcon(con)
+                if con is None:
+                    return
             rt = False
         self.__take_kick(con)
         return rt
@@ -459,22 +484,27 @@ class com_con(object):
             rt = cur.fetchall()
         except mcr.Error as err:
             logging.error("sql error: %s: %s" % (err.errno, err.msg))
+            logging.error(cmd)
             if not con.is_connected():
-                con.close()
-                self.staticlist.remove(con)
-            else:
-                self.__take_kick(con)
+                con = self.resetcon(con)
+                if con is None:
+                    return
+            elif cur.rowcount:
+                cur.fetchall()
+                cur.close()
+            self.__take_kick(con)
             rt = None
         else:
-            if con.unread_result:
-                con.get_rows()
-            self.__take_kick(con)
+            #if con.unread_result:
+            #    con.get_rows()
             cur.close()
-        if rt:
-            if one:
-                rt = rt[0]
-            elif single:
-                rt = [_[0] for _ in rt]
+            self.__take_kick(con)
+        if not rt:
+            return None
+        if one:
+            return rt[0][0] if single else rt[0]
+        if single:
+            return [_[0] for _ in rt]
         return rt
 
     def do_sequence(self, sql_seq, ignore=False):
@@ -497,6 +527,7 @@ class com_con(object):
         cur.close()
         self.__take_kick(con)
         return dbrt_count
+    # if transaction... use with and con autocommit switch
 
 
 class com_con2(object):
@@ -513,7 +544,7 @@ class com_con2(object):
         self.curcon = None
 
     def __getitem__(self, cmds):
-        if isinstance(cmds, str) :
+        if isinstance(cmds, str):
             operation = cmds.split(' ')[0]
             if operation.lower() in ('insert', 'update', 'delete'):
                 return self.execute_db(cmds)

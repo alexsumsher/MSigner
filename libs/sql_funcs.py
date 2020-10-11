@@ -61,20 +61,6 @@ class Qer(object):
             self.con = con
 
     @staticmethod
-    def getcolumn_str(cols):
-        if isinstance(cols, str):
-            return cols.replace(" ", "")
-        if isinstance(cols, (list, tuple)):
-            return ",".join([str(_) for _ in cols])
-
-    @staticmethod
-    def getcolumn_list(cols):
-        if isinstance(cols, (list, tuple)):
-            return cols
-        if isinstance(cols, str):
-            return [_.strip() for _ in cols.split(',')]
-
-    @staticmethod
     def str_list(strin, isint=False, spliter=","):
         if isinstance(strin, (list, tuple)):
             if isint and isinstance(strin[0], str):
@@ -156,13 +142,13 @@ class Qer(object):
             return nstr[:-1],vstr[:-1]
 
     @staticmethod
-    def dict2str(from_dict, array=None, mode=0, defv=None):
+    def dict2str(from_dict, array=None, mode=0, defv=None, parentheses=False):
         empty_str = ""
         defv = defv or {}
         vstr = ""
         # mode: 0->update set string(pstring), 1->vstrings, 2->2 string
         if mode == 0:
-            for _ in array if array else from_dict.iterkeys():
+            for _ in array if array else from_dict.keys():
                 v = from_dict.get(_)
                 if v is None:
                     v = defv.get(_, empty_str)
@@ -172,7 +158,7 @@ class Qer(object):
                     vstr += '%s="%s",' % (_, v)
             return vstr[:-1]
         elif mode == 1:
-            for _ in array if array else from_dict.iterkeys():
+            for _ in array if array else from_dict.keys():
                 v = from_dict.get(_)
                 if v is None:
                     v = defv.get(_, empty_str)
@@ -180,10 +166,10 @@ class Qer(object):
                     vstr += '%s,' % v
                 else:
                     vstr += '"%s",' % v
-            return vstr[:-1]
+            return "(%s)" % vstr[:-1] if parentheses is True else vstr[:-1]
         else:
             nstr = ''
-            for _ in array if array else from_dict.iterkeys():
+            for _ in array if array else from_dict.keys():
                 v = from_dict.get(_) 
                 if v is None:
                     v = defv.get(_, empty_str)
@@ -196,18 +182,23 @@ class Qer(object):
             return nstr[:-1],vstr[:-1]
 
     @staticmethod
-    def dict_list_4json(datalist, fieldlist, one=False, NoneExport=''):
+    def dict_list_4json(datalist, fieldlist, one=False, NoneExport='', pre_processor=None):
         """[{key-1-1:val-1-1,key-1-2:val-1-2,...},{key-2-1:val-2-1,key-2-2:val-2-2,...}]"""
         # datalist: (1,2,3...), ((1,2,3..), (4,5,6...),...); v2.1
-        # mappers: {key1: {id1:val1,id2:val2}, key2...}
-        fieldlist = Qer.str_list(fieldlist)
-        slen = len(fieldlist)
+        # pre_processor: func(row-tuple-data)
+        # ==== if for json-dumps, it's no need to convert
+        if isinstance(fieldlist, str):
+            fieldlist = fieldlist.split(',')
+        if not datalist or not isinstance(fieldlist, (list,tuple)):
+            loger.error('not a correct input!')
+            return None
         def t2d(t):
             c = 0
             d = {}
             for _ in fieldlist:
                 x = t[c]
-                d[_] = x if isinstance(x, (str, int)) else NoneExport if x is None else str(x)
+                #d[_] = x if isinstance(x, (str, int, float)) else NoneExport if x is None else str(x)
+                d[_] = str(x) if isinstance(x, DT) else x if x else NoneExport
                 c += 1
             return d
         def d2d(D):
@@ -221,15 +212,18 @@ class Qer(object):
                 d[_] = o.__dict__[_]
             return d
         slen = len(fieldlist)
-        if isinstance(datalist[0], (str, int)):
-            if slen != len(datalist):
-                raise ValueError("length of item miss match!")
+        if not isinstance(datalist[0], tuple):
+            if slen < len(datalist):
+                raise ValueError("length of item miss match! at less not less!")
             if one:
                 return t2d(datalist)
             else:
                 datalist = [datalist]
         out_list = list()
+        # 必要的预处理？
         for line in datalist:
+            if callable(pre_processor):
+                line = pre_processor(line)
             if isinstance(line, tuple):
                 out_list.append(t2d(line))
             elif isinstance(line, dict) or hasattr(line, '__getitem__'):
@@ -245,7 +239,9 @@ class Qer(object):
             date = DT.today()
         elif isinstance(v_in, str):
             _len = len(v_in)
-            if _len >= 19:
+            if _len > 19:
+                v_in = v_in[:19]
+            if _len == 19:
                 pstr = '%Y-%m-%d %H:%M:%S'
             elif _len == 16:
                 pstr = '%Y-%m-%d %H:%M'
@@ -295,26 +291,14 @@ class Qer(object):
 
 
 class simple_tbl(Qer):
-    """
-    A very simple and eazy single table holder
-    with table pattern:
-    pkey(int auto increase), data_column1, data_colunm2, ...
-    work with basic action:
-    new/modify/delete/get/list/summary
-    all basic defination store in class; work under data mode not ORM
-    """
     work_table = ''
-    main_keys = ()
-    def_v = {'defv': ''}
-    pkey = ''
+    main_keys = None
     require_keys = None
     list_keys = None
-    # pvchecker: privilege checher, a callable pass user/action return true/
-    # pvchecker: privilege checher, a callable pass user/action return true/
-    LIMIT = 50
-    # if batch insert over huge_insert_num(200) -> auto call huge_insert
-    # huge insert by (100) each time
-    # so 1-199 use batch insert
+    def_v = {}
+    pkey = ''
+    query_limit = 30
+    query_max = 1000
     huge_insert_num = 200
     huge_insert_by = huge_insert_num//2
     
@@ -337,41 +321,45 @@ class simple_tbl(Qer):
             return cls._con_pool.execute_db(cls.create_syntax.format(tablename=tablename))
 
     @classmethod
-    def _manage_item(cls, action, orign_data=None, **others):
+    def _manage_item(cls, action, origin_data=None, pkey=0, **others):
         if action == 'new':
-            nstr, vstr = cls.filter_dict(orign_data, colns=cls.main_keys[1:], require_keys=cls.require_keys, defv=cls.def_v, mode='2str')
+            # line below is newly update
+            origin_data = origin_data or others
+            nstr, vstr = cls.filter_dict(origin_data, colns=cls.main_keys[1:], require_keys=cls.require_keys, defv=cls.def_v, mode='2str')
             sqlcmd = 'INSERT INTO %s(%s) VALUES(%s)' % (cls.work_table, nstr, vstr)
             return cls._con_pool.execute_db(sqlcmd, get_ins_id=True)
             
-        pid = int(others.get(cls.pkey, 0))
+        #pid = int(pkey)
+        if pkey == 0:
+            return
         if action == 'modify':
-            pstr = cls.filter_dict(others, colns=cls.main_keys[1:], require_keys=False, exists_only=True, defv=cls.def_v, mode='pstr')
-            sqlcmd = 'UPDATE %s SET %s WHERE %s=%s' % (cls.work_table, pstr, cls.pkey, pid)
+            pstr = cls.filter_dict(others, colns=cls.main_keys[1:], defv=cls.def_v, exists_only=True, mode='pstr')
+            sqlcmd = 'UPDATE %s SET %s WHERE %s=%s' % (cls.work_table, pstr, cls.pkey, pkey)
         elif action == 'delete':
             if 'before_del' in others and not others['before_del']():
                 return False
             else:
-                sqlcmd = 'DELETE FROM %s WHERE %s=%s' % (cls.work_table, cls.pkey, pid)
+                sqlcmd = 'DELETE FROM %s WHERE %s=%s' % (cls.work_table, cls.pkey, pkey)
+        elif action == 'sget':
+            dbrt = cls._con_pool.query_db('SELECT %s FROM %s WHERE %s=%s' % (cls.list_keys, cls.work_table, cls.pkey, pkey), one=True)
+            if dbrt:
+                return dict(zip(cls.list_keys.split(','), dbrt))
         else:
             dbrt = None
-            get_columns = cls.list_keys or cls.main_keys
-            if isinstance(get_columns, (list,tuple)):
-                get_columns = ','.join(get_columns)
+            get_columns = ','.join(cls.main_keys)
             if action == 'get':
-                dbrt = cls._con_pool.query_db('SELECT %s FROM %s WHERE %s=%s' % (get_columns, cls.work_table, cls.pkey, pid), one=True)
+                dbrt = cls._con_pool.query_db('SELECT %s FROM %s WHERE %s=%s' % (get_columns, cls.work_table, cls.pkey, pkey), one=True)
             elif action == 'findone' and 'filterstr' in others:
                 dbrt = cls._con_pool.query_db('SELECT %s FROM %s WHERE %s LIMIT 1' % (get_columns, cls.work_table, others['filterstr']), one=True)
             if dbrt:
-                fieldlist = get_columns if isinstance(get_columns, list) else get_columns.split(',')
-                return dict(zip(fieldlist, dbrt))
+                return dict(zip(cls.main_keys, dbrt))
             else:
                 return None
         return cls._con_pool.execute_db(sqlcmd)
 
     @classmethod
-    def _single_mod(cls, keyid, col, val):
-        # modify one column of special row
-        val = val if isinstance(val, (int, float)) else '"%s"' % val
+    def _single_mod(cls, keyid, col, val, number=False):
+        val = val if number else '"%s"' % val
         sqlcmd = 'UPDATE %s SET %s=%s WHERE %s=%s' % (cls.work_table, col, val, cls.pkey, keyid)
         return cls._con_pool.execute_db(sqlcmd)
 
@@ -484,21 +472,44 @@ class simple_tbl(Qer):
         return map_dict
 
     @classmethod
-    def vget(cls, keyidx, column):
-        sqlcmd = 'SELECT {0} FROM {1} WHERE {2}={3}'.format(column, cls.work_table, cls.pkey, keyidx)
-        try:
-            return cls.query_db(sqlcmd, one=True)[0]
-        except:
-            return None
-
-    @classmethod
-    def _get_vals(cls, keyidx, columns):
-        sqlcmd = 'SELECT {0} FROM {1} WHERE {2}={3}'.format(columns, cls.work_table, cls.pkey, keyidx)
-        try:
-            return cls._con_pool.query_db(sqlcmd, one=True)
-        except:
-            loger.warning("getvals wrong: %s" % sqlcmd)
-            return None
+    def _vget(cls, key, column, key_col=None, num_key=False, one_key=True, cols=0):
+        # most of times get one column by primary key: single quick
+        # key: no list!
+        # num_key: the key is integer (default), and works when key_col is given
+        # one_key: only one key => and return one row (qurey_db with one=True), when False: key is a list/list-string
+        # cols: number of column-to-get in column, defaults 0, auto test
+        # return:
+        #   mysql result tuple(s) or (None, ...)
+        #   maybe i shuold kick arg cols
+        if cols == 0:
+            cols = column.count(",") + 1
+        #cols = column.count(",") + 1
+        if key_col is None:
+            # no need to check if num_key
+            if one_key:
+                sqlcmd = 'SELECT %s FROM %s WHERE %s=%s LIMIT 1' % (column, cls.work_table, cls.pkey, key)
+            else:
+                sqlcmd = 'SELECT %s FROM %s WHERE %s in (%s)' % (column, cls.work_table, cls.pkey, key)
+            dbrt = cls._con_pool.query_db(sqlcmd, one=one_key)
+            if dbrt:
+                return dbrt[0] if (one_key and cols==1) else dbrt
+            else:
+                return None if cols==1 else (None,)*cols
+        # more options
+        # one_key equals one_row
+        if not isinstance(num_key, bool):
+            num_key = isinstance(key, (int, float)) or key.split(',')[0].isdigit()
+        if one_key:
+            key = key if num_key else '"%s"' % key
+            sqlcmd = 'SELECT %s FROM %s WHERE %s=%s LIMIT 1' % (column, cls.work_table, key_col, key)
+        else:
+            key = key if num_key else '"' + key.replace(',', '","') + '"'
+            sqlcmd = 'SELECT %s FROM %s WHERE %s in (%s)' % (column, cls.work_table, key_col, key)
+        dbrt = cls._con_pool.query_db(sqlcmd, one=one_key)
+        if dbrt:
+            return dbrt[0] if (one_key and cols==1) else dbrt
+        else:
+            return None if cols==1 else (None,)*cols
 
     @classmethod
     def _rowget(cls, keyidx, getdict=False):
@@ -512,10 +523,56 @@ class simple_tbl(Qer):
         return dict(zip(cls.main_keys, dbrt))
 
     @classmethod
-    def _batch_insert(cls, value_list, autocolumn=False, singlecmd=True):
+    def huge_insert(cls, value_list, autocolumn=None, singlecmd=True, safe=False, work_table=""):
         # value_list: [{data_dict1}, {data_dict2}, {data_dict3}, ...]
-        # if autocolumn is False: all data-dict contains the same keys, a fater kvstring
-        # if singlecmd is False, sqlcmd are: insert (), insert (), ...
+        # value_list: [[v1,v2,v3...], ...], match the autocolumn...: 
+        # if autocolumn is False: all data-dict contains the same keys, a faster kvstring
+        # if singlecmd is False, sqlcmd are: insert (), insert (), ...; list of sql commands
+        work_table = work_table or cls.work_table
+        if isinstance(value_list[0], dict):
+            vmode = 'dict'
+            batcher = cls.__batch_insert
+        elif isinstance(value_list[0], (list, tuple)):
+            vmode = 'array'
+            batcher = cls.__batch_insert2
+        else:
+            raise ValueError("WRONG: value_list type.")
+        if autocolumn is True:
+            column_list = cls.main_keys[1:]
+        else:
+            if autocolumn is False and vmode == 'dict':
+                # 只有从数据提取的字段无需校验
+                column_list = list(value_list[0].keys())
+            else:
+                if autocolumn is None:
+                    column_list = cls.str_list(cls.require_keys)
+                elif isinstance(autocolumn, str):
+                    column_list = [_.strip() for _ in autocolumn.split(',')]
+                elif isinstance(autocolumn, (list, tuple)):
+                    column_list = autocolumn
+                else:
+                    raise ValueError("unkown autocolumn type!")
+                # 自动column，以第一个数据dict进行测试，确保包含所有需要的字段
+                _testor = value_list[0]
+                if vmode == 'dict' and not all([_ in _testor for _ in column_list]):
+                    raise ValueError("the given column not fit with value_dict!")
+                elif vmode == 'array' and len(column_list) != len(_testor):
+                    raise ValueError("the given column not fit with value_list!")
+
+        slen = len(value_list)
+        if slen <= cls.huge_insert_num:
+            return batcher(value_list, column_list, singlecmd=singlecmd, safe=safe, work_table=work_table)
+        times = slen // cls.huge_insert_by + (1 if slen % cls.huge_insert_by > 0 else 0)
+        _s = 0
+        _e = 0
+        for i in range(times):
+            _s = i * cls.huge_insert_by
+            _e = (i+1) * cls.huge_insert_by
+            batcher(value_list[_s:_e], column_list, singlecmd=singlecmd, safe=safe, work_table=work_table)
+            slen -= cls.huge_insert_by
+
+    @classmethod
+    def __batch_insert(cls, value_list, column_list, singlecmd=True, work_table=""):
         def local_vs(klist, d_in, parentheses):
             vs = []
             for k in klist:
@@ -537,31 +594,11 @@ class simple_tbl(Qer):
                     vs.append('"' + str(v) + '"')
             return '(%s)' % ','.join(vs) if parentheses else ','.join(vs)
 
-        if len(value_list) > cls.huge_insert_num:
-            return cls._huge_insert(value_list, autocolumn=autocolumn)
-        if autocolumn is True:
-            column_str = ','.join(cls.main_keys[1:])
-            valuestr_list = []
-            for d in value_list:
-                # if singlecmd: '[',,,', ',,,' ,...]' else '[(,,,),(,,,),...]'
-                valuestr_list.append(cls.dict2str(d, array=cls.main_keys[1:], mode=1, defv=cls.def_v, parentheses=singlecmd))
-        else:
-            if autocolumn is False:
-                column_list = list(value_list[0].keys())
-            else:
-                if isinstance(autocolumn, str):
-                    column_list = [_.strip() for _ in autocolumn.split(',')]
-                elif isinstance(autocolumn, list):
-                    column_list = autocolumn
-                else:
-                    raise ValueError("unkown autocolumn type!")
-                _testor = value_list[0]
-                if not all([_ in _testor for _ in column_list]):
-                    raise ValueError("the given column not fit with value_dict!")
-            column_str = ','.join(column_list)
-            valuestr_list = []
-            for d in value_list:
-                valuestr_list.append(local_vs(column_list, d, parentheses=singlecmd))
+        work_table = work_table or cls.work_table
+        column_str = ','.join(column_list)
+        valuestr_list = []
+        for d in value_list:
+            valuestr_list.append(local_vs(column_list, d, parentheses=singlecmd))
         if singlecmd is False:
             # insert command sequence...
             insert_cmds = []
@@ -573,16 +610,54 @@ class simple_tbl(Qer):
         return cls._con_pool.execute_db(insert_cmd)
 
     @classmethod
-    def _huge_insert(cls, value_list, autocolumn=False):
-        # batch insert by cls.huge_insert_by
-        slen = len(value_list)
-        if slen <= cls.huge_insert_num:
-            return cls._batch_insert(value_list, autocolumn=autocolumn)
-        times = slen // cls.huge_insert_by + (1 if slen % cls.huge_insert_by > 0 else 0)
-        _s = 0
-        _e = 0
-        for i in range(times):
-            _s = i * cls.huge_insert_by
-            _e = (i+1) * cls.huge_insert_by
-            cls._batch_insert(value_list[_s:_e], autocolumn=autocolumn)
-            slen -= cls.huge_insert_by
+    def __batch_insert2(cls, value_list, column_list, singlecmd=True, safe=False, work_table=""):
+        def local_vs(l_in, parentheses):
+            _vs = []
+            for v in l_in:
+                if isinstance(v, str):
+                    try:
+                        float(v) == int(v)
+                        _vs.append(v)
+                    except ValueError:
+                        _vs.append('"%s"' % str(v))
+                    #if re.fullmatch(r'\d+(\.\d+)?', v):
+                    #    _vs.append(v)
+                    #else:
+                    #    _vs.append('"' + str(v) + '"')
+                elif isinstance(v, (int, float)) or v == "NULL":
+                    _vs.append(str(v))
+                else:
+                    _vs.append('"' + str(v) + '"')
+            return '(%s)' % ','.join(_vs) if parentheses else ','.join(_vs)
+
+        work_table = work_table or cls.work_table
+        column_str = ','.join(column_list)
+        valuestr_list = []
+        for r in value_list:
+            valuestr_list.append(local_vs(r, parentheses=singlecmd))
+        if singlecmd is False:
+            # insert command sequence...
+            insert_cmds = []
+            for vs in valuestr_list:
+                insert_cmds.append('INSERT INTO %s(%s) VALUES(%s)' % (work_table, column_str, vs))
+            if safe is False:
+                insert_cmd = ';'.join(insert_cmds)
+                return cls._con_pool.do_sequence(insert_cmd)
+            else:
+                c = 0
+                con = cls._con_pool.free()
+                cur = con.cursor()
+                for scmd in insert_cmds:
+                    try:
+                        cur.execute(scmd)
+                        c += 1
+                    except:
+                        print(cur.fetchwarnings())
+                        continue
+                cur.close()
+                cls._con_pool.release(con)
+                loger.info("safety insert %d." % c)
+                return
+        value_str = ','.join(valuestr_list)
+        insert_cmd = 'INSERT INTO %s(%s) VALUES %s' % (work_table, column_str, value_str)
+        return cls._con_pool.execute_db(insert_cmd)
