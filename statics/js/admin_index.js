@@ -1024,6 +1024,7 @@ dlg_mgm.inital({
 			//console.log(rsp);
 			if(rsp && rsp.success==='yes'){
 				dlg_mgm.closedlg();
+				imsger.show("操作：" + for_win === 'schoolusers'?"导入用户":"添加参会者" + "完成");
 				if (for_win === 'schoolusers'){
 					$("#schoolusers_tbl").stable("go_page", 1, true, null, true);
 				} else if (for_win === 'attenders'){
@@ -1032,7 +1033,11 @@ dlg_mgm.inital({
 			} else if (rsp.msg !== 'done') {
 				emsger.show("失败：" + rsp.msg);
 			} else {
-				emsger.show("失败的操作");
+				let xmsg = "";
+				if (for_win === attenders){
+					xmsg = "可能该用户已经存在";
+				}
+				emsger.show("失败的操作" + xmsg);
 			}
 			//reflash table when success
 		},

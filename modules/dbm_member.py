@@ -114,7 +114,7 @@ class attenders(simple_tbl):
 		return cls._con_pool.query_db(sqlcmd, single=True)
 
 	@classmethod
-	def set_attenders(cls, mid, users, mtimes=0):
+	def set_attenders(cls, mid, users, mtimes=-1):
 		# 创建参会人员名单，在会议开始前可操作；防止重复
 		# param:
 		# users: [{userid: {username, roleid}}]
@@ -122,22 +122,21 @@ class attenders(simple_tbl):
 		# mtimes: meeting times
 		if mtimes == -1:
 			# auto for last recent
-			mtimes = cls._con_pool.query_db('SELECT mtimes FROM %s WHERE mid=%d ORDER BY mtimes DESC LIMIT 1' % (cls.work_table, mid), one=True, single=True)
-			if mtimes:
-				_currents = cls._con_pool.query_db('SELECT userid FROM %s WHERE mid=%d AND mtimes=%d' % (cls.work_table, mid, mtimes), single=True)
-				if _currents:
-					currents = set(_currents)
-					for i in range(len(users)-1, -1, -1):
-						if users[i]['userid'] in currents:
-							users.pop(i)
-							print(f"pop exsits user: {i}")
-					if len(users) == 0:
-						return
-			else:
-				mtimes = 0
+			mtimes = cls._con_pool.query_db('SELECT mtimes FROM %s WHERE mid=%d ORDER BY mtimes DESC LIMIT 1' % (cls.work_table, mid), one=True, single=True) or 0
+		_currents = cls._con_pool.query_db('SELECT userid FROM %s WHERE mid=%d AND mtimes=%d' % (cls.work_table, mid, mtimes), single=True)
+		if _currents:
+			currents = set(_currents)
+			legal_users = []
+			for u in users:
+				if u['userid'] in currents:
+					loger.warning(f"exsits user when add attenders: {u['username']}")
+				else:
+					legal_users.append(u)
+			if len(legal_users) == 0:
+				return 0
 		value_str = '('
 		sqlcmd = 'INSERT INTO %s(mid,mtimes,userid,wxuserid,username,roleid) VALUES %s'
-		value_str += '),('.join(['%s,%s,"%s","%s","%s",%s' % (mid, mtimes, u['userid'], u['wxuserid'], u['username'], u.get('roleid', 0)) for u in users]) + ')'
+		value_str += '),('.join(['%s,%s,"%s","%s","%s",%s' % (mid, mtimes, u['userid'], u['wxuserid'], u['username'], u.get('roleid', 0)) for u in legal_users]) + ')'
 		return cls._con_pool.execute_db(sqlcmd % (cls.work_table, value_str))
 
 	@classmethod

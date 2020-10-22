@@ -164,7 +164,7 @@ class user_tbl(simple_tbl):
 		dbrt = cls._manage_item('new', orign_data=userdata)
 			# exitst!
 		if not dbrt:
-			return cls._vget(userdata['userid'], 'uid', cols=1)
+			return cls._vget(userdata['userid'], 'uid', key_col="userid", cols=1)
 		return dbrt
 
 	@classmethod
