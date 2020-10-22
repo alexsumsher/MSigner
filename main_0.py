@@ -15,7 +15,7 @@ from ultilities import check_client, json_flat_2_list
 
 from tschool import myschool, pmsgr, app_school
 import wxmnp
-from sys_config import cur_config, loger
+from sys_config import cur_config, loger, DateEncoder
 from modules import meeting as MEETING, attenders as ATTENDERS, mroom as MROOM, user_tbl as USER
 from actions import mgr_actions, user_actions, system
 
@@ -52,7 +52,7 @@ def back_system():
 		if target == 'schools':
 			if action == 'list':
 				rtdata['data'] = system.on_school("list")
-		return json.dumps(rtdata)
+		return json.dumps(rtdata, cls=DateEncoder)
 
 # =================================================  NORMAL PAGES  ====================================================
 # =================================================  NORMAL PAGES  ====================================================
@@ -76,7 +76,6 @@ def index():
 	if request.method == 'GET':
 		if not userid:
 			return abort(404)
-		session['userid'] = userid
 		if 'action' not in request.args:
 			# go for page html
 			# check client
@@ -104,7 +103,13 @@ def index():
 			elif client == 'wx':
 				return 'wx index page'
 			else:
-				return send_file('statics/htmls/admin_index.html', mimetype='text/html')
+				session['userid'] = userid
+				print(f"session of uid=>{session['userid']}")
+				# 在智慧校园系统中 session丢失
+				cookies['SameSite'] = "None"
+				#return ASST.cookie_file_respon('statics/htmls/admin_index.html', cookies)
+				return ASST.plus_file_respon('statics/htmls/admin_index.html', cookies)
+				#return send_file('statics/htmls/admin_index.html', mimetype='text/html')
 		openid = session.get("openid")
 		if openid:
 			user = muser.get(openid)
@@ -114,7 +119,7 @@ def index():
 			rtdata['success'] = 'no'
 		return json.dumps(rtdata)
 	print(request.form)
-	return json.dumps(rtdata)
+	return json.dumps(rtdata, cls=DateEncoder)
 
 @app.route("/group", methods=['GET', 'POST'])
 def group():
@@ -147,7 +152,7 @@ def school():
 		rtdata['data'] = datas
 	else:
 		rtdata['success'] = 'no'
-	return json.dumps(rtdata)
+	return json.dumps(rtdata, cls=DateEncoder)
 
 # =================================================  WX PAGES  ====================================================
 # =================================================  WX PAGES  ====================================================
@@ -190,7 +195,7 @@ def wxuser():
 				rtdata['data'] = {'userid': userid_obj[0], 'objid': userid_obj[1], 'school': school}
 			# user exists
 			rtdata['exists'] = 'yes'
-		return json.dumps(rtdata)
+		return json.dumps(rtdata, cls=DateEncoder)
 
 	if action == 'regist':
 		formdata = request.form.to_dict()
@@ -263,7 +268,7 @@ def wxuser():
 		#	rtdata['success'] = 'no'
 		return json.dumps(rtdata)
 	rtdata['success'] = 'no'
-	return json.dumps(rtdata)
+	return json.dumps(rtdata, cls=DateEncoder)
 
 # =================================================  STATIC SORUCES  ====================================================
 # =================================================  STATIC SORUCES  ====================================================

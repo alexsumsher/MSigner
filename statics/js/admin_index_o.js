@@ -5,7 +5,6 @@ var _env = {
 	schoolid: '', //objid
 	username: "", // 无法穿透session，获取sessionStorage的数据，只有username可用
 	userid: "",
-	dpsels_dpids: new Set(),
 };
 var _departments = null; // 全校部门-教师
 var _dpmap = new Set();
@@ -133,15 +132,6 @@ page_initor('meeting', function(){
 		let dpid = li.dataset.id;
 		let url;
 		if (_PGC.cur_page === 'attenders'){
-			if (_env.opt_depselall){
-				// 部门选，不加载
-				let span = li.querySelector("span");
-				span.classList.toggle("seled");
-				if (span.classList.contains("seled")){
-					_env.dpsels_dpids.add(dpid);
-				}
-				return;
-			}
 			let userby = _PGC.$("userby");
 			if (userby === "all" || userby==="school"){
 				url = _exec.make_urlparam({action: 'dpart_users', departid: dpid, level: 6}, "/school");
@@ -165,69 +155,20 @@ page_initor('meeting', function(){
 			let seler = document.getElementById("users_in_dpart");
 			if (rsp && rsp.data){
 				let userby = _PGC.$("userby"),namekey;
-				if (userby === "all" || userby==="school"){
-					namekey="name";
-				}else{
-					namekey="username"
-				}
-				if (_PGC.cur_page !== "schoolusers"){
-					// 非导入用户时可以带组名称
-					rsp.data.forEach(u=>{
-						u[namekey] = u[namekey] + "(" + li.querySelector("span").textContent + ")";
-					});
-				}
+				if (userby === "all" || userby==="school"){namekey="name"}else{namekey="username"}
 				_exec.set_sel_opts_ex(seler, rsp.data, null, namekey, 'userid', ['uid', 'wxuserid','departid', 'cellphone']);
 			} else{
 				//清空
 				emsger.show("该部门无用户");
-				if (!_env.opt_depselall){
-					seler.options.length = 0;
-				}
+				seler.options.length = 0;
 			}
 			// active 效果；单行
-			if (_PGC.$("act_span")){
-				_PGC.$("act_span").classList.remove("seled");
-			}
-			let act_span = li.querySelector("span");
+			let act_span = li.children[0];
+			if (_PGC.$("act_span")){_PGC.$("act_span").classList.toggle("seled")}
 			_PGC.$("act_span", act_span);
 			act_span.classList.toggle("seled");
 		});
 	};
-	dlg_dp.querySelector("#btn_dpsel_done").addEventListener("click", function(evt){
-		// 列出
-		if (_env.dpsels_dpids.size === 0){
-			return;
-		}
-		let dp_arr_str = "";
-		for(let did of _env.dpsels_dpids.values()){
-			dp_arr_str += did + ",";
-		}
-		
-		dp_arr_str = dp_arr_str.substr(0, dp_arr_str.length - 1);
-		let params = {action: 'list', page: 1, size: 1000, departid: dp_arr_str};
-		if (_PGC.$("userby") === 'reged'){
-			params['onlyreged'] = 'yes';
-		}
-		$.getJSON("/resource/users", params, function(rsp){
-			if (rsp && rsp.data){
-				let seler = document.getElementById("users_in_dpart");
-				let userby = _PGC.$("userby"),namekey;
-				if (userby === "all" || userby==="school"){namekey="name"}else{namekey="username"}
-				if (_PGC.cur_page !== "schoolusers"){
-					// 非导入用户时可以带组名称
-					rsp.data.forEach(u=>{
-						u[namekey] = u[namekey] + "(" + li.querySelector("span").textContent + ")";
-					});
-				}
-				_exec.set_sel_opts_ex(seler, rsp.data, null, namekey, 'userid', ['uid', 'wxuserid','departid', 'cellphone']);
-				dlg_dp.querySelector("#btn_sels_all").click();
-			}
-		});
-	});
-	dlg_dp.querySelector("#rdo_selbydp").addEventListener("change", function(evt){
-		_env.opt_depselall = evt.target.checked;
-		document.getElementById("btn_clear_all").click();
-	});
 	// 全选/取消全选
 	dlg_dp.querySelector("#btn_sels_all").onclick = function(e){
 		let seler = dlg_dp.querySelector("#users_in_dpart");
@@ -244,16 +185,6 @@ page_initor('meeting', function(){
 			opts[i].selected = false;
 		}
 	}
-	dlg_dp.querySelector("#btn_clear_all").addEventListener("click", function(evt){
-		//清空
-		dlg_dp.querySelector("#users_in_dpart").options.length = 0;
-		document.getElementById("depart_tree2").querySelectorAll("span").forEach(span=>{
-			if (span.classList.contains("seled")){
-				span.classList.remove("seled");
-			}
-		});
-		_env.dpsels_dpids.clear();
-	});
 	// 打开dlg即清空右侧
 	$("#dlg_departments").on("shown.zui.modal", function(){
 		document.getElementById("users_in_dpart").options.length=0;

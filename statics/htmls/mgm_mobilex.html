@@ -16,7 +16,6 @@
 
     <!-- vonic 核心文件 -->
     <script src="https://unpkg.com/vonic@2.0.0-beta.15/dist/vonic.min.js"></script>
-		 
 	<style>
 		i.icon_blur: {color: #DDD;}
 		i.icon_active: {color: #19c13b}
@@ -25,21 +24,10 @@
 		div.scrollfix {margin-top: 50px}
 	</style>
 	<script>
-		var _gbl_env = {dpsel: false};
+		var _gbl_env = {};
 		var _departments = null;
 		var _dpmap = new Object();
 		var _dps_onsel = ""; // 当前备选列表
-	</script>
-	<script type="module">
-	Vue.component('tpicker', {
-		props: ['label', 'm_ontime'],
-		data: function () {
-			return {
-				count: 0
-			}
-		},
-		template: '<div class="von-input-wrapper"><label class="item item-borderless item-input von-input"><span class="input-label" v-text="label">{{label}}</span><input class="" type="time" v-bind:value="m_ontime" v-on:input="$emit(' + "'input'," + '$event.target.value)"></label></div>'
-	})
 	</script>
   </head>
   <body>
@@ -76,7 +64,7 @@
 
 	<!-- page templates -->
     <script type="text/x-template" id="cells">
-      <div class="page has-navbar" v-nav="{title: '会议管理系统v0.5', showMenuButton: true}">
+      <div class="page has-navbar" v-nav="{title: '会议管理系统v.3', showMenuButton: true}">
         <div class="page-content">
 			<div>欢迎：<span class="padding" v-text="uname"></span>老师！</div>
 			<div class="page-cells">
@@ -92,10 +80,7 @@
 			<div class="page-content">
 				<von-input type="text" v-model="m_name" label="会议名称"></von-input>
 				<datepicker v-model="m_ondate" label="会议日" date-format="yyyy-mm-dd"></datepicker>
-				<tpicker v-model="m_ontime" label="会议时间"></tpicker>
-				<!--
 				<von-input type="text" v-model="m_ontime" label="会议时间"></von-input>
-				-->
 				<von-input type="text" v-model="m_cost" label="会议时长（分钟）"></von-input>
 				<von-input type="text" v-model="m_signpre" label="提前签到（分钟）"></von-input>
 				<von-input type="text" v-model="m_signlimit" label="允许签到（分钟）"></von-input>
@@ -112,10 +97,7 @@
 				<md-button class="button button-positive button-block button-option" @click.native="for_mtype">{{m_typename}}</md-button>
 				<md-button class="button button-positive button-block button-option" @click.native="for_room">{{m_roomname}}</md-button>
 				<von-input type="text" v-model="m_ondate" label="会议日期"></von-input>
-				<tpicker v-model="m_ontime" label="会议时间"></tpicker>
-				<!--
 				<von-input type="text" v-model="m_ontime" label="会议时间"></von-input>
-				-->
 				<von-input type="text" v-model="m_cost" label="会议时长（分钟）"></von-input>
 				<datepicker v-model="p_start" label="周期起始日" date-format="yyyy-mm-dd"></datepicker>
 				<datepicker v-model="p_end" label="周期结束日" date-format="yyyy-mm-dd"></datepicker>
@@ -126,7 +108,7 @@
 	</script>
 
     <script type="text/x-template" id="mlists">
-      <div class="page has-navbar" v-nav="{title: '会议列表', showBackButton: true}">
+      <div class="page has-navbar" v-nav="{title: '会议列表', showBackButton: true}" showBackButton="true">
         <div class="page-content">
 			<list>
 				<item class="item-icon-right" v-for="(meeting,index) in all_meetings" v-bind:key="meeting.mid">
@@ -141,7 +123,7 @@
     </script>
 	
     <script type="text/x-template" id="mgm_mrooms">
-      <div class="page has-navbar" v-nav="{title: '会议室', showBackButton: true}">
+      <div class="page has-navbar" v-nav="{title: '会议室s', showBackButton: true}" showBackButton="true">
         <div class="page-content">
 			<list>
 				<item class="item-icon-right" v-for="(mroom,index) in all_mrooms" v-bind:key="mroom.roomid">
@@ -170,8 +152,9 @@
 	</script>
 	-->
 	<script type="text/x-template" id="userlist">
-		<div class="page has-navbar" v-nav="{title: '学校教师列表', showMenuButton: true, menuButtonText: 'OK', onMenuButtonClick: userok, showBackButton: true}" style="overflow-y: scroll">
+		<div class="page has-navbar" v-nav="{title: '学校教师列表', showMenuButton: true, menuButtonText: 'OK', onMenuButtonClick: userok}" style="overflow-y: scroll">
 			<von-checkbox :options="users" v-model="chosenUsers" theme="positive"></von-checkbox>
+			<p>chosen users: {{ chosenUsers.length }}</p>
 		</div>
 	</script>
 	
@@ -191,7 +174,7 @@
 	</script>
 
 	<script type="text/x-template" id="dplist">
-		<div id="dpwin" class="page has-navbar" v-nav="{title: '部门表', showBackButton: true, backButtonText: dpsel_txt, onBackButtonClick: dpsel, showMenuButton: true, onMenuButtonClick: dpsok, menuButtonText: mbtnicon}" style="overflow-y: scroll">
+		<div class="page has-navbar" v-nav="{title: '部门表', showMenuButton: true, menuButtonText: 'OK', onMenuButtonClick: dpsok}" style="overflow-y: scroll">
 			<von-checkbox :options="dpitems" v-model="chosenDps" theme="positive"></von-checkbox>
 			<p>chosen topics: {{ chosenDps}}</p>
 		</div>

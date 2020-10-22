@@ -119,6 +119,7 @@ class meeting(simple_tbl):
 			return 0
 		params['objid'] = objid
 		params['lastetime'] = now
+		print(params)
 		mid = cls._manage_item('new', orign_data=params)
 		return mid
 
@@ -255,7 +256,7 @@ class meeting(simple_tbl):
 		# bad_ignore：跳过无效
 		workdt = str(workdt or TD.today())[:19]
 		offset = 0
-		limit = 500
+		limit = 1000
 		if bad_igore:
 			sqlcmd = 'SELECT * FROM %s WHERE (rpmode=%d AND nextdtime>"%s" AND status>%d) OR (rpmode>%d AND status>%d AND p_end>"%s") ORDER BY objid LIMIT %d,%d' % \
 			(cls.work_table, mnode.RMODE_ONCE, workdt, cls.STA_CLOSED, mnode.RMODE_ONCE, cls.STA_CLOSED, workdt, offset, limit)

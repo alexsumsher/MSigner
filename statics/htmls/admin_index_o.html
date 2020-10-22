@@ -458,35 +458,22 @@
         <h4 class="modal-title">部门</h4>
       </div>
       <div class="modal-body row">
-				<div class="col-md-5" id="dlg_dept_tree" style="height: 460px;overflow-y: scroll;border-right: 2px solid #999999">
-					<ul class="tree tree-lines" data-ride="tree" id="depart_tree2">
-					</ul>
-				</div>
-				<div class="col-md-7" id="dlg_user_list" style="border-right: 2px solid #999999">
-					<select class="form-control" id="users_in_dpart" multiple style="height: 460px">
-					</select>
-					<!--
-					<label><input type="radio" name="include_subs" value=1 >包含下级部门</label>
-					<label><input type="radio" name="include_subs" value=0 checked>不含下级部门</label>
-					-->
-					<br>
-				</div>
+		<div class="col-md-5" id="dlg_dept_tree" style="height: 460px;overflow-y: scroll;border-right: 2px solid #999999">
+			<ul class="tree tree-lines" data-ride="tree" id="depart_tree2">
+			</ul>
+		</div>
+		<div class="col-md-7" id="dlg_user_list" style="border-right: 2px solid #999999">
+			<select class="form-control" id="users_in_dpart" multiple style="height: 460px">
+			</select>
+			<!--
+			<label><input type="radio" name="include_subs" value=1 >包含下级部门</label>
+			<label><input type="radio" name="include_subs" value=0 checked>不含下级部门</label>
+			-->
+			<br>
+			<button id="btn_sels_all">全选</button>
+			<button id="btn_unsel_all">取消全选</button>
+		</div>
       </div>
-			<div class="btn-toolbar" style="margin: 0px 1rem">
-				<div class="btn-group">
-					<label>
-						<input type="checkbox" id="rdo_selbydp">按部门选择
-					</label>
-				</div>
-				<div class="btn-group">
-					<button class="btn" id="btn_dpsel_done">部门选择-确定</button>
-				</div>
-				<div class="btn-group" style="margin-left: 6rem;">
-					<button class="btn" id="btn_sels_all">全选</button>
-					<button class="btn" id="btn_unsel_all">取消全选</button>
-					<button class="btn" id="btn_clear_all">清空</button>
-				</div>
-			</div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
         <button type="button" class="btn btn-primary go_submit">提交</button>

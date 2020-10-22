@@ -244,45 +244,22 @@ var Pg_userlist = {
 	data(){
 		return{
 			users: [],
-			page: 1,
+			chosenUsers: [],
+			allusers: [],
 		}
 	},
 	mounted(){
-		axios.request({url: "/resource/users", method:'get', params: {action: 'list', page: 1, size: 100, departid: _dps_onsel}}).then((rsp)=>{
+		axios.request({url: "/resource/users", method:'get', params: {action: 'list', page: 1, size: 1000, departid: _dps_onsel}}).then((rsp)=>{
 			rsp.data.data.forEach((u)=>{
 				u.selsta = "";
 				u.dpname = _dpmap[u.departid];
-				this.users.push(u);
+				this.allusers.push(u);
+				this.users.push(u.username);
 			});
-			this.top = 1;
-			this.bottom = 20;
 			_gbl_env.seled_users = [];
 		});
 	},
 	methods: {
-		onInfinite(done) {
-			if (this.page === -1){console.log("pagelover-1");done();return;}
-			$toast.show("onInfinite", 500);
-			this.page++;
-			axios.request({url: "/resource/users", method:'get', params: {action: 'list', page: 1, size: 100, departid: _dps_onsel}}).then((rsp)=>{
-				if (!rsp.data.data || rsp.data.data.length === 0){
-					console.log("pagelover");
-					this.page = -1;
-					done();
-					return;
-				}
-				rsp.data.data.forEach((u)=>{
-					u.selsta = "";
-					u.dpname = _dpmap[u.departid];
-					this.users.push(u);
-				});
-				//this.users.push(...rsp.data.data);
-				//this.top = this.bottom + 1;
-				this.bottom += rsp.data.data.length;
-				console.log("page:" + this.page + "\t" + this.top + "::" + this.bottom);
-				done();
-			});
-		},
 		setdps(){
 			// 设定部门 Pg_dplist
 			console.log("dps");
@@ -294,22 +271,15 @@ var Pg_userlist = {
 				this.$router.go(-2);
 				return;
 			}
-			this.users.forEach((u)=>{
-				if (u.selsta !== ''){
-					_gbl_env.seled_users.push({
-						userid: u.userid,
-						wxuserid: u.wxuserid,
-						username: u.username,
-						roleid: 0
-					});
-				}
-			});
-			console.log(_gbl_env.seled_users);
-			if (_gbl_env.seled_users.length === 0){
+			if (this.chosenUsers.length === 0){
 				this.$router.go(-2);
 				$toast.show("未选择教师", 500);
 				return;
 			}
+			this.chosenUsers.forEach(u=>{
+				_gbl_env.seled_users.push(this.allusers[u]);
+			});
+			console.log(JSON.stringify(_gbl_env.seled_users));
 			d_cmds.set_attenders({
 				mid: _gbl_env.cur_meeting.mid,
 				attenders: _gbl_env.seled_users
@@ -318,18 +288,6 @@ var Pg_userlist = {
 				_gbl_env.seled_users.length = 0;
 				this.$router.go(-2);
 			});
-		},
-		adduser(idx){
-			let u = this.users[idx];
-			if (u.selsta === ''){
-				u.selsta = '已选';
-				u.cls="icon_active";
-				u.seled = true;
-			} else {
-				u.selsta = '';
-				u.cls="icon_blur";
-				u.seled = false;
-			}
 		},
 		testuser(idx){},
 	}

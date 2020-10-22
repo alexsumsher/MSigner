@@ -595,7 +595,7 @@ class Mqueue(object):
         # annouce:
         if len(mnode.announce_sequence) > 0:
             loger.info("go for announce!")
-            if issubclass(cls.announcer, Thread):
+            if issubclass(cls.announcer.__class__, Thread):
                 _th = cls.announcer(mnode.announce_sequence)
                 _th.start()
             elif callable(cls.announcer):
@@ -606,7 +606,7 @@ class Mqueue(object):
         #if len(mnode.update_sequence) > 0 and time.localtime().tm_hour != 1 and mnode.wb_day<time.localtime().tm_day:
         if len(mnode.update_sequence) > 0:
             loger.info("go for dbwriteback!")
-            if issubclass(cls.dbwritebacker, Thread):
+            if issubclass(cls.dbwritebacker.__class__, Thread):
                 _th = cls.dbwritebacker(mnode.update_sequence)
                 _th.start()
             elif callable(cls.dbwritebacker):

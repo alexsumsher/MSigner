@@ -1,16 +1,1 @@
-(<module>  ) starting server now...
-(_log      )  * Debugger is active!
-(_log      )  * Debugger PIN: 190-668-968
-(_log      )  * Running on http://0.0.0.0:7890/ (Press CTRL+C to quit)
-(_new_conn ) Starting new HTTPS connection (1): api.weixin.qq.com:443
-(_make_request) https://api.weixin.qq.com:443 "GET /sns/jscode2session?appid=wx7af5e4cc74980097&secret=c1d9170380f2c10300907b018c4ff30e&js_code=043JaG481DdTnP1b6H581Mzq481JaG41&grant_type=authorization_code HTTP/1.1" 200 82
-(_log      ) 127.0.0.1 - - [13/Mar/2020 15:40:48] "GET /regs?js_code=043JaG481DdTnP1b6H581Mzq481JaG41 HTTP/1.1" 200 -
-(_log      ) 127.0.0.1 - - [13/Mar/2020 15:41:51] "GET /regs?action=regist&regcode= HTTP/1.1" 200 -
-(_log      ) 127.0.0.1 - - [13/Mar/2020 15:42:13] "GET /regs?action=regist&regcode= HTTP/1.1" 200 -
-(_new_conn ) Starting new HTTPS connection (1): api.weixin.qq.com:443
-(_make_request) https://api.weixin.qq.com:443 "GET /sns/jscode2session?appid=wx7af5e4cc74980097&secret=c1d9170380f2c10300907b018c4ff30e&js_code=0335Zpco0HqYpn169Ddo0tCxco05ZpcO&grant_type=authorization_code HTTP/1.1" 200 82
-(_log      ) 127.0.0.1 - - [13/Mar/2020 15:43:27] "GET /regs?js_code=0335Zpco0HqYpn169Ddo0tCxco05ZpcO HTTP/1.1" 200 -
-(_new_conn ) Starting new HTTPS connection (1): api.weixin.qq.com:443
-(_make_request) https://api.weixin.qq.com:443 "GET /sns/jscode2session?appid=wx7af5e4cc74980097&secret=c1d9170380f2c10300907b018c4ff30e&js_code=0439M0z11z0nRV1c6Ry11ahSy119M0zC&grant_type=authorization_code HTTP/1.1" 200 82
-(_log      ) 127.0.0.1 - - [13/Mar/2020 15:44:05] "GET /regs?js_code=0439M0z11z0nRV1c6Ry11ahSy119M0zC HTTP/1.1" 200 -
-(_log      ) 127.0.0.1 - - [13/Mar/2020 15:44:28] "GET /regs?action=regist&regcode=lxOV8064fCSY HTTP/1.1" 200 -
+(<module>  ) ERROR

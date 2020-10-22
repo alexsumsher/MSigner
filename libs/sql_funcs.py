@@ -224,7 +224,7 @@ class Qer(object):
         for line in datalist:
             if callable(pre_processor):
                 line = pre_processor(line)
-            if isinstance(line, tuple):
+            if isinstance(line, (tuple, list)):
                 out_list.append(t2d(line))
             elif isinstance(line, dict) or hasattr(line, '__getitem__'):
                 out_list.append(d2d(line))
@@ -321,11 +321,11 @@ class simple_tbl(Qer):
             return cls._con_pool.execute_db(cls.create_syntax.format(tablename=tablename))
 
     @classmethod
-    def _manage_item(cls, action, origin_data=None, pkey=0, **others):
+    def _manage_item(cls, action, orign_data=None, pkey=0, **others):
         if action == 'new':
             # line below is newly update
-            origin_data = origin_data or others
-            nstr, vstr = cls.filter_dict(origin_data, colns=cls.main_keys[1:], require_keys=cls.require_keys, defv=cls.def_v, mode='2str')
+            orign_data = orign_data or others
+            nstr, vstr = cls.filter_dict(orign_data, colns=cls.main_keys[1:], require_keys=cls.require_keys, defv=cls.def_v, mode='2str')
             sqlcmd = 'INSERT INTO %s(%s) VALUES(%s)' % (cls.work_table, nstr, vstr)
             return cls._con_pool.execute_db(sqlcmd, get_ins_id=True)
             
@@ -412,14 +412,18 @@ class simple_tbl(Qer):
                 return cls._list_items(keyids=takes)
 
     @classmethod
-    def _list_items(cls, keyids='', lastid=None,  get_columns=None, limit=0, offset=0, filterstr='', summary=False):
-        sqlcmd = 'SELECT * FROM %s' % cls.work_table
+    def _list_items(cls, keyids='', lastid=None,  get_columns=None, fieldlist=None, limit=0, offset=0, filterstr='', summary=False):
+        sqlcmd = 'SELECT %s FROM %s' % (cls.main_keys, cls.work_table)
         limit = limit or cls.query_limit
         if get_columns is None:
             fieldlist = cls.list_keys or cls.main_keys
-            get_columns = cls.getcolumn_str(fieldlist)
+            get_columns = fieldlist if isinstance(fieldlist, str) else ','.join(fieldlist)
+        elif isinstance(get_columns, str):
+            fieldlist = fieldlist or get_columns.split(',')
         else:
-            fieldlist = get_columns.split(',')
+            # must be list/tuple
+            get_columns = ','.join(get_columns)
+            fieldlist = fieldlist or get_columns
         if keyids:
             sqlcmd = 'SELECT %s FROM %s WHERE %s in (%s)' % (get_columns, cls.work_table, ','.join(keyids) if isinstance(keyids, list) else keyids)
             dbrt = cls._con_pool.query_db(sqlcmd)
@@ -443,7 +447,9 @@ class simple_tbl(Qer):
             dbrt = cls._con_pool.query_db(sqlcmd)
         if not dbrt:
             return (0,None) if summary else None
-        return cls.dict_list_4json(dbrt, fieldlist) if summary is False else (total, cls.dict_list_4json(dbrt, fieldlist))
+        if summary:
+            return total, cls.dict_list_4json(dbrt, fieldlist)
+        return cls.dict_list_4json(dbrt, fieldlist)
 
     @classmethod
     def _collect(cls):
@@ -572,7 +578,7 @@ class simple_tbl(Qer):
             slen -= cls.huge_insert_by
 
     @classmethod
-    def __batch_insert(cls, value_list, column_list, singlecmd=True, work_table=""):
+    def __batch_insert(cls, value_list, column_list, singlecmd=True, safe=False, work_table=""):
         def local_vs(klist, d_in, parentheses):
             vs = []
             for k in klist:
@@ -604,6 +610,24 @@ class simple_tbl(Qer):
             insert_cmds = []
             for vs in valuestr_list:
                 insert_cmds.append('INSERT INTO %s(%s) VALUES(%s)' % (cls.work_table, column_str, vs))
+            if safe is False:
+                insert_cmd = ';'.join(insert_cmds)
+                return cls._con_pool.do_sequence(insert_cmd)
+            else:
+                c = 0
+                con = cls._con_pool.free()
+                cur = con.cursor()
+                for scmd in insert_cmds:
+                    try:
+                        cur.execute(scmd)
+                        c += 1
+                    except:
+                        print(cur.fetchwarnings())
+                        continue
+                cur.close()
+                cls._con_pool.release(con)
+                loger.info("safety insert %d." % c)
+                return
             return cls._con_pool.do_sequence(insert_cmds)
         value_str = ','.join(valuestr_list)
         insert_cmd = 'INSERT INTO %s(%s) VALUES %s' % (cls.work_table, column_str, value_str)

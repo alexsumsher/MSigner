@@ -119,18 +119,22 @@ class attenders(simple_tbl):
 		# param:
 		# users: [{userid: {username, roleid}}]
 		# get exists for conflicts
+		# mtimes: meeting times
 		if mtimes == -1:
-			# auto for last
+			# auto for last recent
 			mtimes = cls._con_pool.query_db('SELECT mtimes FROM %s WHERE mid=%d ORDER BY mtimes DESC LIMIT 1' % (cls.work_table, mid), one=True, single=True)
-		_currents = cls._con_pool.query_db('SELECT userid FROM %s WHERE mid=%d AND mtimes=%d' % (cls.work_table, mid, mtimes), single=True)
-		if _currents:
-			currents = set(_currents)
-			for i in range(len(users)-1, -1, -1):
-				if users[i]['userid'] in currents:
-					users.pop(i)
-					print(f"pop exsits user: {i}")
-			if len(users) == 0:
-				return
+			if mtimes:
+				_currents = cls._con_pool.query_db('SELECT userid FROM %s WHERE mid=%d AND mtimes=%d' % (cls.work_table, mid, mtimes), single=True)
+				if _currents:
+					currents = set(_currents)
+					for i in range(len(users)-1, -1, -1):
+						if users[i]['userid'] in currents:
+							users.pop(i)
+							print(f"pop exsits user: {i}")
+					if len(users) == 0:
+						return
+			else:
+				mtimes = 0
 		value_str = '('
 		sqlcmd = 'INSERT INTO %s(mid,mtimes,userid,wxuserid,username,roleid) VALUES %s'
 		value_str += '),('.join(['%s,%s,"%s","%s","%s",%s' % (mid, mtimes, u['userid'], u['wxuserid'], u['username'], u.get('roleid', 0)) for u in users]) + ')'
@@ -170,7 +174,7 @@ class attenders(simple_tbl):
 
 	@classmethod
 	def kick(cls, aid):
-		return cls._manage_item('delete', aid=aid)
+		return cls._manage_item('delete', pkey=aid)
 		
 	@classmethod
 	def remove(cls, mid, users):

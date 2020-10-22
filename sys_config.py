@@ -4,6 +4,14 @@
 import base_config
 import os
 import logging
+import json
+
+class DateEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if not isinstance(obj, (str, int, float)):
+            return str(obj)
+        else:
+            return json.JSONEncoder.default(self,obj)
 
 logging.basicConfig(level=logging.DEBUG, filename='nyscore_server.log', filemode='w', format='(%(funcName)-10s) %(message)s')
 loger = logging.getLogger()
@@ -21,6 +29,9 @@ cur_config.addconf('dbserver', {
         'autocommit': True
     })
 cur_config.addconf('testdb', {'host': '139.9.218.122','port': 3306,'user': 'signerA','password': 'htch-db1x', 'autocommit': True, 'db': 'msigner','charset': 'utf8mb4','connection_timeout': 5})
+cur_config.addconf("meeting", {
+    "PRE_ANNOUNCE_TIME": 30
+    })
 
 class fconfig(object):
     #flask config

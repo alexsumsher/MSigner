@@ -24,7 +24,9 @@ const d_cmds = {
 				return ret
 			  }],
 		}).then((rsp)=>{
-			if(rsp.data.success==='yes'){callback(rsp.data.data)}
+			if(rsp.data.success==='yes' && rsp.data.data.mid > 0){callback(rsp.data.data)}else{
+				alert("失败");
+			}
 		});
 	},
 	set_attenders: function(params, callback){

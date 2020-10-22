@@ -1,20 +1,24 @@
 import os
-from flask import request, session, abort, json
+import json
+from flask import request, session, abort
 
 from tschool import myschool, pmsgr
-from sys_config import cur_config, loger
+from sys_config import cur_config, loger, DateEncoder
 from modules import meeting as MEETING, attenders as ATTENDERS, mroom as MROOM, user_tbl as USER
 from actions import mgr_actions, user_actions, system
 
 
 def RESOURCE(target=""):
+	# 在智慧校园系统中 session丢失
 	rtdata = {'success': 'yes', 'msg': 'done', 'code': 0, 'data': None, 'dlen': 0}
 	objid = request.args.get('objectid', "2XaxJgvRj6Udone")
-	userid = request.args.get('userid') or session.get('userid') or 'anonymouse'
+	userid = request.args.get('userid') or session.get('userid')
+	print(session)
+	userid = userid or 'anonymouse'
 	if not objid:
 		rtdata['msg'] = 'no objectid'
 		rtdata['success'] = 'no'
-		return json.dumps(rtdata)
+		return json.dumps(rtdata, cls=DateEncoder)
 	action = request.args.get('action')
 	if target == 'meeting':
 		if action == 'list':
@@ -76,9 +80,10 @@ def RESOURCE(target=""):
 		elif action == 'schedule':
 			roomid = int(request.args.get('roomid'))
 			handler = mgr_actions(objid)
-			ondate = request.args.get("ondate")
-			ontime = request.args.get('ontime') #None
-			rtdata['data'] = handler.room_schedule(roomid, ondate, ontime)
+			period_from = request.args.get("period_from")
+			period_end = request.args.get('period_end') #None
+			#rtdata['data'] = handler.room_schedule(roomid, ondate, ontime)
+			rtdata['data'] = handler.room_schedule2(roomid, period_from=period_from, period_end=period_end)
 		elif action == 'available':
 			# room available for special request
 			ondate = request.args.get('ondate')
@@ -132,4 +137,4 @@ def RESOURCE(target=""):
 	elif target == 'school':
 		userid = request.args.get("userid")
 		user_hanlder = user_actions(objid)
-	return json.dumps(rtdata)
+	return json.dumps(rtdata, cls=DateEncoder)

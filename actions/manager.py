@@ -3,9 +3,10 @@ import re
 import logging
 
 from libs import Qer
-from modules import attenders as ATTENDERS, mroom as MROOM, meeting as MEETING, user_tbl as USER
+from modules import attenders as ATTENDERS, mroom as MROOM, meeting as MEETING, user_tbl as USER, room_schedule as RMS
 from modules import Mqueue, mnode
 from tschool import myschool, pmsgr
+from sys_config import cur_config
 
 loger = logging.getLogger()
 
@@ -15,7 +16,7 @@ class mgr_actions(Qer):
 		'meeting_modify': 30, # 会议开始前30分钟可修改
 		'meeting_drop': 0, # 会议开始后不可删除
 	}
-
+	PRE_ANNOUNCE_TIME = cur_config.meeting['PRE_ANNOUNCE_TIME']
 
 	@classmethod
 	def action_ontime(cls, objid, mid, ondtime=None, mcount=0):
@@ -40,7 +41,7 @@ class mgr_actions(Qer):
 	def _test_ctime(cls, ondate, ontime=None):
 		# 判断会议的建立在时间上是否可行（一次性会议）
 		nextdtime = cls._fixed_date(ondate + " " + ontime)
-		delta = nextdtime - now
+		delta = nextdtime - DT.now()
 		return delta.days >= 0 and delta.seconds//60 > cls.PRE_ANNOUNCE_TIME
 
 	@classmethod
@@ -150,6 +151,25 @@ class mgr_actions(Qer):
 				return meeting[0]
 		return 0
 
+	def room_schedule2(self, roomid, mid=0, period_from=None, period_end=None, limit=0, offset=0):
+		# 某个会议室的时间总表
+		# @params:
+		# mid>0: 指定会议（某会议在某个会议室的时间总表）
+		# period_from/period_end: string-of-date(YYYY-MM-DD), date for searching period
+		fstr = 'R.roomid={}'.format(roomid)
+		if mid > 0:
+			fstr += ' AND R.mid={}'.format(mid)
+		if period_from:
+			fstr += ' AND R.ondate>="{}"'.format(period_from)
+		if period_end:
+			fstr += ' AND R.ondate<="{}"'.format(period_end)
+		fstr += ' ORDER BY R.ondate'
+		sqlcmd = 'SELECT M.name,R.mid,R.ondate,R.time_begin,R.time_end,R.mtime,R.status FROM %s R LEFT JOIN \
+		%s M on R.mid=M.mid WHERE %s' % (RMS.work_table, MEETING.work_table, fstr)
+		dbrt = self._con_pool.query_db(sqlcmd)
+		if dbrt:
+			return self.dict_list_4json(dbrt, 'mname,mid,ondate,time_begin,time_end,mtine,status')
+
 	def room_close_safe(self, roomid, unlock=False):
 		if unlock:
 			sqlcmd = "UPDATE %s SET status=%d WHERE roomid=%d" % (self.tbl_room, mroom.STA_READY, roomid)
@@ -168,6 +188,70 @@ class mgr_actions(Qer):
 	########## ======================================================================================================== ##########
 	########## =============================================== ON MEETINGS ============================================ ##########
 	########## ======================================================================================================== ##########
+	def newmeeting_safe2(self, params, autonode=True, getndtime=False):
+		# return mid(success) or False(if conflict), if getndtime: extdata
+		roomid = int(params['mroom'])
+		mname = params.get('name')
+		_rpmode = int(params['rpmode'])
+		_ondate = params.get('ondate')
+		_ontime = params['ontime']
+		_mtime = int(params['mtime'])
+		# with roomid, precheck
+		# precheck room
+		_node = None
+		if roomid > 0:
+			if _rpmode == mnode.RMODE_ONCE:
+				if RMS.conflict_dtime(roomid, _ondate, _ontime, mtime=_mtime):
+					loger.error("create meeting but conflic")
+					self.emsg = "会议室冲突"
+					return False
+			else:
+				_rparg = [int(_) for _ in params['rparg'].split(',')]
+				_p_start = params['p_start']
+				_p_end = params['p_end']
+				_node = mnode(0, mname, mroom=roomid, rpmode=_rpmode, rparg=_rparg, ontime=_ontime, mtime=_mtime, p_start=_p_start, p_end=_p_end)
+				_meeting_schedule = _node.calendar(get_mode=2)
+				print(_meeting_schedule)
+				if RMS.conflict_schedule(roomid, _meeting_schedule, _ontime, period_from=_p_start, period_end=_p_end, mtime=_mtime):
+					loger.error("create meeting but conflic")
+					self.emsg = "会议室冲突"
+					return False
+		# if no room or no conflict....
+		if _rpmode == mnode.RMODE_ONCE and not self._test_ctime(_ondate, _ontime):
+			loger.error("not allow time")
+			self.emsg = "非许可时间"
+			return False
+		try:
+			if _rpmode == mnode.RMODE_ONCE:
+				_node = mnode(0, mname, mroom=roomid, rpmode=_rpmode, ondate=_ondate, ontime=_ontime, mtime=_mtime)
+			else:
+				_rparg = [int(_) for _ in params['rparg'].split(',')]
+				_p_start = params['p_start']
+				_p_end = params['p_end']
+				# counting=0
+				# if no roomid, _node not create above
+				_node = _node or mnode(0, mname, mroom=roomid, rpmode=_rpmode, rparg=_rparg, ontime=_ontime, mtime=_mtime, p_start=_p_start, p_end=_p_end)
+				# for first create new, nextdtime aouto make by node, put with params
+				params['nextdtime'] = _node.nextdtime
+		except ValueError:
+			loger.error("create node wrong with params: [%s]" % params)
+			return False
+		mid = MEETING.new(self.objid, params)
+		if mid > 0:
+			_node.mid = mid
+			Mqueue.auto_node(self.objid, _node)
+			if getndtime:
+				self.extdata = _node.nextdtime
+			# create schedule if roomid
+			if roomid:
+				if _rpmode == mnode.RMODE_ONCE:
+					dbresult = RMS.one_meeting(roomid, mid, _ondate, _ontime, meetingtime=_mtime)
+				else:
+					dbresult = RMS.repeatedly_meeting(roomid, mid, _meeting_schedule, _ontime, meetingtime=_mtime)
+				loger.info(dbresult)
+			return mid
+		return False
+
 	def newmeeting_safe(self, params, autonode=True, getndtime=False):
 		# return int: -n | 0 | n;
 		# ==> v2: return int,nextdtime
@@ -221,8 +305,9 @@ class mgr_actions(Qer):
 			return mid
 		return 0
 
-	def drop_meeting(self, mid, attenders=False, force=False):
+	def drop_meeting(self, mid, attenders=False, force=False, clear_old_schedule=False):
 		# delete a meeting and clear attender and remove from mqueue
+		# clear old schedule: 移除已经触发过的会议日程
 		step = 1
 		rt = MEETING.delete(mid, bymark=not force)
 		if not rt:
@@ -239,10 +324,14 @@ class mgr_actions(Qer):
 		_mqueue = Mqueue.get_queue(self.objid)
 		rt = _mqueue.remove(mid)
 		if rt is True:
-			loger.info("DROP_MEETING(%s): success.")
+			loger.info("DROP_MEETING(%s): success." % mid)
 			MEETING.delete(mid, bymark=False)
+			if clear_old_schedule:
+				RMS.clearby_meeting(mid, after_date="1971")
+			else:
+				RMS.clearby_meeting(mid)
 		else:
-			loger.error("DROP_MEETING(%s): failure when remove from queque!")
+			loger.error("DROP_MEETING(%s): failure when remove from queque!" % mid)
 		return rt
 
 	def fullmeeting(self, mid):
@@ -254,9 +343,14 @@ class mgr_actions(Qer):
 		return self.dict_list_4json(dbrt, take_columns, one=True)
 
 	def update_ontime(self, mid, formdata):
+		# works for one time meeting only
 		if not action_ontime(self.objid, mid):
-			return
+			self.emsg = "不合法的操作时间"
+			return False
 		meeting = Mqueue.get_queue(self.objid)[mid]
+		if meeting.rpmode != mnode.RMODE_ONCE:
+			self.emsg = "只有一次性会议可以编辑时间"
+			return False
 		for k,v in formdata.items():
 			meeting[k] = v
 		MEETING._manage_item('modify', **formdata)
@@ -322,7 +416,7 @@ class mgr_actions(Qer):
 			warray.append('date(nextdtime)>="%s"' % DT.today().date())
 		wstr = ' AND '.join(warray)
 		if holder and assists_meetings:
-			wstr = '(%s) OR (mid in %s)' % (wstr, str(tuple(assists_meetings)))
+			wstr = '(%s) OR (%s)' % (wstr, 'mid in %s' % str(tuple(assists_meetings)) if len(assists_meetings)>1 else 'mid=%d' % assists_meetings[0])
 		if summary:
 			count_cmd = 'SELECT count(*) FROM %s WHERE %s' % (MEETING.work_table, wstr)
 			count = self.con.query_db(count_cmd, one=True)

@@ -2,6 +2,7 @@ import time
 import random
 import string
 from flask import make_response
+import json
 from modules import user_tbl as UTBL
 
 
@@ -37,6 +38,19 @@ def cookie_file_respon(file_input, cookies):
     for k,v in cookies.items():
         rsp.set_cookie(k, value=v if isinstance(v, str) else str(v))
     return rsp
+
+def plus_file_respon(file_input, env_values):
+    # 直接插入<script>const serverdata={}</script>
+    # 放置在</body>\r\n之后
+    if isinstance(file_input, str):
+        fo = open(file_input, 'rb')
+    elif hasattr(file_input, 'seek'):
+        fo = file_input
+    else:
+        raise ValueError("not a correct filepath/fileobject!")
+    fdata = fo.read()
+    script_string = b'</body>\r\n<script language="javascript">\r\nconst serverdata=%s</script>' % json.dumps(env_values).encode()
+    return fdata.replace(b'</body>\r\n', script_string)
 
 def wxlogin(userid, password, openid=None):
 	udata = UTBL.user_by_userid(userid)

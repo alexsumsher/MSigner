@@ -5,7 +5,7 @@ from ultilities import json_flat_2_list
 
 
 from tschool import myschool, pmsgr, app_school
-from sys_config import cur_config, loger
+from sys_config import cur_config, loger, DateEncoder
 from modules import meeting as MEETING, attenders as ATTENDERS, mroom as MROOM, user_tbl as USER
 from actions import mgr_actions, user_actions, system
 
@@ -46,7 +46,7 @@ def API(target):
 	if not objid:
 		rtdata['msg'] = 'no objid!'
 		rtdata['success'] = 'no'
-		return json.dumps(rtdata)
+		return json.dumps(rtdata, cls=DateEncoder)
 	rt = None
 	handler = None
 	if target == 'meeting':
@@ -54,8 +54,8 @@ def API(target):
 			roomid = int(params.get("mroom", 0))
 			params['holder'] = userid
 			handler = mgr_actions(objid)
-			mid = handler.newmeeting_safe(params, getndtime=True)
-			if mid <= 0:
+			mid = handler.newmeeting_safe2(params, getndtime=True)
+			if mid is False:
 				rt = False
 			else:
 				rt = {'mid': mid, 'nextdtime': handler.extdata}
@@ -67,14 +67,14 @@ def API(target):
 			mid = int(params['mid'])
 			userid = params['userid']
 			mtimes = int(params.get('mtimes', 0))
-			mcount = int(params.get('mcount', -1))
+			mcount = int(params.get('mcount') or -1)
 			roomid = int(params.get("roomid", 0))
 			identify_key = params['room_identifier']
 			user_hanlder = user_actions(objid)
 			rt = user_hanlder.meeting_signin(userid, mid, identify_key, roomid=roomid, mcount=mcount)
 			rtdata['msg'] = user_hanlder.extdata
 		elif action == 'ask_off':
-			mcount = int(params.get('mcount', -1))
+			mcount = int(params.get('mcount') or -1)
 			remark = params.get("remark")
 			userid = params['userid']
 			mid = int(params['mid'])
@@ -82,7 +82,7 @@ def API(target):
 			rt = user_hanlder.meeting_off(userid, mid, mcount=mcount, remark=remark)
 		elif action == 'delete':
 			mid = int(params['mid'])
-			mcount = int(params.get('mcount', 0))
+			mcount = int(params.get('mcount') or 0)
 			handler = mgr_actions(objid)
 			rt = handler.drop_meeting(mid, mcount)
 		elif action == 'mod_rparg':
@@ -96,13 +96,17 @@ def API(target):
 			else:
 				rt = False
 		elif action == 'modify':
-			rt = MROOM.update(params)
+			roomid = int(params.pop("roomid"))
+			rt = MROOM.update(roomid, **params)
 	elif target == 'users':
 		if action == 'import':
 			users = json_flat_2_list(request.form)['users']
 			print(users)
-			# may conflict
-			rt = USER.import_multi(users, objid)
+			if len(users) == 1:
+				rt = USER.import_user(objid, users[0])
+			else:
+				# may conflict
+				rt = USER.import_multi(users, objid)
 			if not rt:
 				rtdata['msg'] = "有已经导入的教师"
 		elif action == 'importall':
@@ -110,7 +114,9 @@ def API(target):
 			rt = handler.import_all()
 	elif target == 'attenders':
 		mid = int(params.pop('mid'))
-		mcount = int(params.get('mcount', -1))
+		# mcount: ""
+		mcount = int(params.get('mcount') or -1)
+		print(mcount)
 		if not mgr_actions.action_ontime(objid, mid, mcount=mcount):
 			rtdata['success'] = 'no'
 			rtdata['msg'] = '当前会议相关配置不可操作（请确认您操作是否过时会议）'
@@ -157,4 +163,4 @@ def API(target):
 			rtdata['msg'] = handler.emsg
 	elif not rtdata['data']:
 		rtdata['data'] = rt
-	return json.dumps(rtdata)
+	return json.dumps(rtdata, cls=DateEncoder)

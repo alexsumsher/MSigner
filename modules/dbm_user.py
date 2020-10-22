@@ -110,7 +110,18 @@ class user_tbl(simple_tbl):
 
 	@classmethod
 	def user_by_userid(cls, userid):
-		return cls._manage_item('findone', filterstr='userid="%s"' % userid)
+		udata = cls._vget(userid, "uid,wxuserid,openid,departid,username,password,regdtime,status", key_col="userid", cols=8)
+		if udata:
+			return {
+			'uid': udata[0],
+			'wxuserid': udata[1],
+			'openid': udata[2],
+			'departid': udata[3],
+			'username': udata[4],
+			'password': udata[5],
+			'regdtime': udata[6],
+			'status': udata[7],
+			}
 
 	@classmethod
 	def list_users(cls, objid=None, page=1, size=50, with_banned=False, only_reged=False, by_dpid=None):
@@ -143,6 +154,18 @@ class user_tbl(simple_tbl):
 		else:
 			fstr = None
 		return cls._count(bystr=fstr)
+
+	@classmethod
+	def import_user(cls, objid, userdata):
+		# userid
+		if 'userid' not in userdata:
+			return False
+		userdata['objid'] = objid
+		dbrt = cls._manage_item('new', orign_data=userdata)
+			# exitst!
+		if not dbrt:
+			return cls._vget(userdata['userid'], 'uid', cols=1)
+		return dbrt
 
 	@classmethod
 	def import_multi(cls, users, objid, precheck=False):

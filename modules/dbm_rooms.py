@@ -64,15 +64,11 @@ class mroom(simple_tbl):
 		return cls._con_pool.execute_db(sqlcmd)
 
 	@classmethod
-	def update(cls, mid=None, **kwargs):
+	def update(cls, roomid, **kwargs):
 		# 变更，附上最近修改时间；lasttime
-		if mid is None and cls.pkey not in kwargs:
-			raise ValueError("need a primary key!")
-		if mid:
-			kwargs[pkey] = mid
 		if 'lasttime' not in kwargs:
 			kwargs['lasttime'] = datetime.now()
-		return cls._manage_item('modify', **kwargs)
+		return cls._manage_item('modify', pkey=roomid, **kwargs)
 
 	@classmethod		
 	def lock(cls, roomid, unlock=False, force=False):
@@ -113,13 +109,6 @@ class mroom(simple_tbl):
 		return cls._con_pool.query_db(sqlcmd, one=True)
 
 	@classmethod
-	def update(cls, params):
-		if 'roomid' not in params:
-			loger.error("no roomid given")
-			return False
-		return cls._manage_item('modify', **params)
-
-	@classmethod
 	def detail(cls, roomid):
 		return cls._manage_item("get", roomid)
 
@@ -136,8 +125,7 @@ class mroom(simple_tbl):
 		if by_sign_mode:
 			filter_str += ' AND sign_mode=%s' % by_sign_mode
 		dbrt = cls._list_items(get_columns=cls.list_keys, filterstr=filter_str, limit=100)
-		if dbrt:
-			return cls.dict_list_4json(dbrt, cls.list_keys)
+		return dbrt
 
 	@classmethod
 	def list(cls, objid, page, pagesize, lastid=0, takeall=False, summary=False):

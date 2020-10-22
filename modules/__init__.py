@@ -10,4 +10,5 @@ from .dbm_member import attenders
 from .dbm_rooms import mroom
 from .dbm_meetings import meeting
 from .dbm_user import user_tbl
-_all_tables = [meeting, mroom, attenders, user_tbl, sysconsts]
+from .dbm_roomschedule import room_schedule
+_all_tables = [meeting, mroom, attenders, user_tbl, sysconsts, room_schedule]

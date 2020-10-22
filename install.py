@@ -3,6 +3,10 @@
 #
 import os
 import sys
+import logging
+
+loger = logging.getLogger()
+
 thisver = print(sys.version_info[0])
 requires = ['flask', 'mysql.connector', 'xlrd', 'xlwt', 'openpyxl', 'python-crontab', 'requests']
 if input("是否跳过需求包安装？") != 'y':
@@ -31,6 +35,32 @@ def test_db():
         return False
     STEP += 1
     return con
+
+def single_table(con, tbl_obj):
+    # 单表
+    if isinstance(tbl_obj, str):
+        for tbl in _all_tables:
+            if tbl.__name__ == tbl_obj:
+                tbl_obj = tbl
+                break
+    if not hasattr(tbl_obj, 'work_table'):
+        print("unkonwn target")
+        return
+    cur = con.cursor()
+    try:
+        #cur.execute("DROP TABLE IF EXISTS %s;" % tbl_obj.work_table)
+        #1142 (42000): DROP command denied to user 'dktest_a1'@'122.238.129.197' for table 'project_jobs'
+        cur.execute('DROP TABLE IF EXISTS %s' % tbl_obj.work_table)
+        sqlcmd = tbl_obj.create_syntax.format(tbl_name=tbl_obj.work_table)
+        print(sqlcmd)
+        cur.execute(sqlcmd)
+        return tbl_obj.work_table
+    except Exception as e:
+        print(e)
+        print(f"create table: {tbl_obj.work_table} failure!")
+    finally:
+        cur.close()
+        con.close()
 
 def create_tables(con):
     """
@@ -93,30 +123,23 @@ def finish(con):
     return True
 
 
-def about_crontab(cronfile=None):
-    if os.name == "nt":
-        print("windows not support!")
-        return
-    from crontab import CronTab
-    tabs = [{'name': 'clear_caches'}, {'name': 'new_year'}]
-    if cronfile:
-        file_cron = CronTab(tabfile='self_maintain.tab')
-    else:
-        file_cron = CronTab(tabfile='/etc/crontab', user=False)
-    job1 = file_cron.new(command='python %s%sself_maintain.py clear_caches' %(os.getcwd(), os.sep))
-    job1.hour.on(1)
-    job2 = file_cron.new(command='python %s%sself_maintain.py new_year' %(os.getcwd(), os.sep))
-    job2.month.on(6, 7, 8)
-    file_cron.write()
-    
-
 if __name__ == '__main__':
-    con = test_db()
+    action = sys.argv[1]
+    if len(sys.argv) == 4:
+        con = test_db(sys.argv[3])
+    else:
+        con = test_db()
     if con:
+        if action == 'single_table':
+            print(single_table(con, sys.argv[2]))
+            sys.exit(0)
         create_tables(con)
+        if action == 'onlydb':
+            loger.info("onlydb done")
+            finish(con)
+            sys.exit(0)
         check_folders()
         finish(con)
-        print("install done!")
+        loger.info("install done!")
     else:
-        print("ERROR")
-    #about_crontab()
+        loger.error("ERROR")

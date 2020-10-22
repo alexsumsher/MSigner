@@ -226,7 +226,7 @@ window._exec = {
 		}
 	},
 	
-	set_sel_opts_ex: function(dom, opts, first, map_title, map_value, exts){
+	set_sel_opts_ex: function(dom, opts, first, map_title, map_value, exts, add){
 		// exts: array of dataset-keynames
 		map_title = map_title || "title";
 		map_value = map_value || "value";
@@ -240,6 +240,19 @@ window._exec = {
 		if(!opts || opts.length === 0){
 			// clear
 			optx.length = 0;
+			return;
+		}
+		if (add){
+			opts.forEach((o,j)=>{
+				_o = document.createElement('option');
+				optx.add(_o);
+				_o.textContent = o[map_title];
+				_o.value= o[map_value];
+				if (!exts){return}
+				exts.forEach((n)=>{
+					_o.dataset[n] = o[n];
+				});
+			});
 			return;
 		}
 		opts.forEach((o,j)=>{
@@ -431,7 +444,7 @@ function page_initor(mainpg, inifunc){
 	  tpg.addEventListener("cilck", this._dlg_onclick);
     },
 
-    go_page: function(pgname, fade){
+    go_page: function(pgname, inidata, fade){
 		var cpage = document.getElementById(page_collector.cur_page);
 		// split args
 		var tpage = document.getElementById(pgname);
@@ -452,6 +465,10 @@ function page_initor(mainpg, inifunc){
 			console.log('page ini...');
 			tpage.dispatchEvent(page_collector.ini_evt);
 			page_collector.pgstats[pgname] = 1;
+		}
+		// 防止ini+load同时进行导致的初始化+赋值失败
+		if (inidata){
+			this.$(inidata);
 		}
       
 		// page_collector.def_onload(pgname);
@@ -610,7 +627,7 @@ function page_initor(mainpg, inifunc){
 			}
 			for(let i=0;i<10;i++){
 				let thefor = exp_for.exec(tpl);
-				console.log(tpl);
+				//console.log(tpl);
 				if(thefor){
 					let forstr = '';
 					$env[thefor[1]].forEach((_,i)=>{forstr += thefor[2].replace(/\$\{/g, '${$env.' + thefor[1] + '[' + i + '].')});

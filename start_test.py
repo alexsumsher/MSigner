@@ -16,13 +16,15 @@ loger.debug("starting server now...")
 # 初始化db连接池
 if sys.platform.startswith('win'):
 	com_cons = com_con('test', cur_config.testdb, length=2, debug=True)
+	Mqueue.set_announcer(None)
+	Mqueue.set_dbwritebacker(None)
 else:
 	com_cons = com_con('test', cur_config.dbserver, length=3, debug=True)
+	Mqueue.set_announcer(m_announcer)
+	Mqueue.set_dbwritebacker(db_writebacker)
 Qer.set_con_pool(com_cons)
 
 # 初始化管理队列
-Mqueue.set_announcer(m_announcer)
-Mqueue.set_dbwritebacker(db_writebacker)
 Mqueue.set_synctime()
 
 

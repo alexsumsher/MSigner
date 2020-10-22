@@ -46,6 +46,8 @@ var Cells = {
 	  }else if (cellIndex === 0){
 		$router.push('mroomlist');
 	  }else if (cellIndex === 2){
+			//不开启直接查看人员
+			return;
 		  if (_gbl_env.cur_meeting){
 			  _gbl_env.cur_meeting.mid = 0;
 		  }
@@ -244,72 +246,41 @@ var Pg_userlist = {
 	data(){
 		return{
 			users: [],
-			page: 1,
+			chosenUsers: [],
+			allusers: [],
 		}
 	},
 	mounted(){
-		axios.request({url: "/resource/users", method:'get', params: {action: 'list', page: 1, size: 100, departid: _dps_onsel}}).then((rsp)=>{
-			rsp.data.data.forEach((u)=>{
+		axios.request({url: "/resource/users", method:'get', params: {action: 'list', page: 1, size: 1000, departid: _dps_onsel}}).then((rsp)=>{
+			rsp.data.data.forEach((u,i)=>{
 				u.selsta = "";
 				u.dpname = _dpmap[u.departid];
-				this.users.push(u);
+				this.allusers.push(u);
+				this.users.push(u.username + "(" + u.dpname + ")");
+				if(_gbl_env.dpsel){
+					console.log("dpsel");
+					this.chosenUsers.push(i);
+				}
 			});
-			this.top = 1;
-			this.bottom = 20;
 			_gbl_env.seled_users = [];
 		});
 	},
 	methods: {
-		onInfinite(done) {
-			if (this.page === -1){console.log("pagelover-1");done();return;}
-			$toast.show("onInfinite", 500);
-			this.page++;
-			axios.request({url: "/resource/users", method:'get', params: {action: 'list', page: 1, size: 100, departid: _dps_onsel}}).then((rsp)=>{
-				if (!rsp.data.data || rsp.data.data.length === 0){
-					console.log("pagelover");
-					this.page = -1;
-					done();
-					return;
-				}
-				rsp.data.data.forEach((u)=>{
-					u.selsta = "";
-					u.dpname = _dpmap[u.departid];
-					this.users.push(u);
-				});
-				//this.users.push(...rsp.data.data);
-				//this.top = this.bottom + 1;
-				this.bottom += rsp.data.data.length;
-				console.log("page:" + this.page + "\t" + this.top + "::" + this.bottom);
-				done();
-			});
-		},
-		setdps(){
-			// 设定部门 Pg_dplist
-			console.log("dps");
-			//this.$router.push('dpslist');
-		},
 		userok(){
 			if (!_gbl_env.cur_meeting || _gbl_env.cur_meeting.mid === 0){
 				// 无目标会议
 				this.$router.go(-2);
 				return;
 			}
-			this.users.forEach((u)=>{
-				if (u.selsta !== ''){
-					_gbl_env.seled_users.push({
-						userid: u.userid,
-						wxuserid: u.wxuserid,
-						username: u.username,
-						roleid: 0
-					});
-				}
-			});
-			console.log(_gbl_env.seled_users);
-			if (_gbl_env.seled_users.length === 0){
+			if (this.chosenUsers.length === 0){
 				this.$router.go(-2);
 				$toast.show("未选择教师", 500);
 				return;
 			}
+			this.chosenUsers.forEach(u=>{
+				_gbl_env.seled_users.push(this.allusers[u]);
+			});
+			//console.log(JSON.stringify(_gbl_env.seled_users));
 			d_cmds.set_attenders({
 				mid: _gbl_env.cur_meeting.mid,
 				attenders: _gbl_env.seled_users
@@ -318,18 +289,6 @@ var Pg_userlist = {
 				_gbl_env.seled_users.length = 0;
 				this.$router.go(-2);
 			});
-		},
-		adduser(idx){
-			let u = this.users[idx];
-			if (u.selsta === ''){
-				u.selsta = '已选';
-				u.cls="icon_active";
-				u.seled = true;
-			} else {
-				u.selsta = '';
-				u.cls="icon_blur";
-				u.seled = false;
-			}
 		},
 		testuser(idx){},
 	}
@@ -419,14 +378,34 @@ var Pg_mrooms = {
 var Pg_dplist = {
 	template: '#dplist',
 	data(){
+		_gbl_env.dpsel = false;
+		console.log("on dplist data func");
 		return{
+			mbtnicon: '<i class="icon ion-checkmark-circled"></i>',
+			dpsel_txt: '按部门',
 			chosenDps: [],
 			dpitems: Object.values(_dpmap),
 		}
 	},
 	methods: {
+		dpsel(){
+			// 开启部门选择
+			console.log("dpsel on");
+			let infotxt;
+			let backmenuele = document.getElementById("dpwin").previousElementSibling.querySelector("span");
+			if (_gbl_env.dpsel){
+				infotxt = "取消部门全选！";
+				this.dpsel_txt = "按部门:关";
+				_gbl_env.dpsel = false;
+			} else {
+				this.dpsel_txt = "按部门:开";
+				infotxt = "启用部门选择!";
+				_gbl_env.dpsel = true;
+			}
+			backmenuele.textContent = this.dpsel_txt;
+			$toast.show(infotxt, 1000);
+		},
 		dpsok(){
-			console.log(this.chosenDps);
 			let _dplist = Object.keys(_dpmap);
 			if (this.chosenDps.length > 0){
 				_dps_onsel = "";
@@ -434,9 +413,14 @@ var Pg_dplist = {
 					_dps_onsel += _dplist[n] + ',';
 				});
 				_dps_onsel = _dps_onsel.substr(0, _dps_onsel.length-1);
+				this.$router.push("userlist");
+			} else {
+				// 不选择任何部门 === 取消操作，回到主界面
+				$toast.show("未选部门，返回会议列表。", 500);
+				this.$router.go(-1);
 			}
 			//this.$router.go(-1);
-			this.$router.push("userlist");
+			
 		},
 	}
 };
