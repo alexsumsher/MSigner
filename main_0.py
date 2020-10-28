@@ -99,7 +99,8 @@ def index():
 				print("empty userin...")
 				cookies = {'userid': userid}
 			if client == 'mobile':
-				return ASST.cookie_file_respon('statics/htmls/mgm_mobile.html', cookies)
+				return ASST.plus_file_respon('statics/htmls/mgm_mobile.html', cookies)
+				#return ASST.cookie_file_respon('statics/htmls/mgm_mobile.html', cookies)
 				#return send_file('statics/htmls/mgm_mobile.html', mimetype='text/html')
 			elif client == 'wx':
 				return 'wx index page'
