@@ -110,7 +110,7 @@ class attenders(simple_tbl):
 	@classmethod
 	def wx_attender(cls, mid, mtimes=0):
 		# 列出参会人员，仅wxuserid
-		sqlcmd = 'SELECT wxuserid FROM %s WHERE mid=%s AND wxuserid is not NULL' % (cls.work_table, mid)
+		sqlcmd = 'SELECT wxuserid FROM %s WHERE mid=%s AND mtimes=%d AND wxuserid is not NULL' % (cls.work_table, mtimes, mid)
 		return cls._con_pool.query_db(sqlcmd, single=True)
 
 	@classmethod

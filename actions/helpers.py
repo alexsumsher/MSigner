@@ -51,6 +51,7 @@ class m_announcer(Thread):
 			n = self.sequence.pop(0)
 			roomname = MROOM._vget(n.mroom, 'name') or ""
 			wxusers = ATTENDERS.wx_attender(n.mid, n.counting) # couting for repeateds
+			loger.info(f"get members for meeting [{n.name}] on times [n.counting]")
 			if not wxusers:
 				loger.warning("无用户参会！%s" % n.name)
 				n.set_announced()
