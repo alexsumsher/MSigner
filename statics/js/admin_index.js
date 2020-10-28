@@ -1054,7 +1054,7 @@ dlg_mgm.inital({
 					seled_opts.push({
 						userid: o.value,
 						wxuserid: o.dataset.wxuserid,
-						username: o.textContent,
+						username: o.textContent.split("(")[0],
 						roleid: 0,
 					});
 				}else if (for_win === 'schoolusers'){
