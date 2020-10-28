@@ -52,7 +52,7 @@ class mroom(simple_tbl):
 
 	@classmethod
 	def new(cls, objid, params):
-		if not all([_ in params for _ in ('name', 'sign_mode', 'room_identifier')]):
+		if not any([_ in params for _ in ('name', 'sign_mode', 'room_identifier')]):
 			raise ValueError("至少需要会议室名称")
 		params['objid'] = objid
 		return cls._manage_item('new', orign_data=params)

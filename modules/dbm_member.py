@@ -134,6 +134,8 @@ class attenders(simple_tbl):
 					legal_users.append(u)
 			if len(legal_users) == 0:
 				return 0
+		else:
+			legal_users = users
 		value_str = '('
 		sqlcmd = 'INSERT INTO %s(mid,mtimes,userid,wxuserid,username,roleid) VALUES %s'
 		value_str += '),('.join(['%s,%s,"%s","%s","%s",%s' % (mid, mtimes, u['userid'], u['wxuserid'], u['username'], u.get('roleid', 0)) for u in legal_users]) + ')'

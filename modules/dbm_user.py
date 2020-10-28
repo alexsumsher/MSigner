@@ -161,6 +161,7 @@ class user_tbl(simple_tbl):
 		if 'userid' not in userdata:
 			return False
 		userdata['objid'] = objid
+		userdata['phonenumber'] = userdata.get("cellphone", 0)
 		dbrt = cls._manage_item('new', orign_data=userdata)
 			# exitst!
 		if not dbrt:

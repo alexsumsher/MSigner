@@ -94,6 +94,7 @@ def index():
 			if uinfo:
 				print(f"user in: {uinfo}")
 				cookies = {'userid': userid, 'username': uinfo['username']}
+				session['userid'] = userid
 			else:
 				print("empty userin...")
 				cookies = {'userid': userid}
@@ -241,7 +242,12 @@ def wxuser():
 			rtdata['success'] = 'no'
 	elif action == 'wxlogin':
 		ukey = request.form["ukey"]
-		userid = USER.get_userby(ukey)[0]
+		userdata = USER.get_userby(ukey)
+		if not userdata:
+			rtdata['success'] = "no"
+			rtdata['msg'] = "用户不在系统中，请确认是否已经导入改用户"
+			return json.dumps(rtdata)
+		userid = userdata[0]
 		password = request.form["password"]
 		schoolid = request.form["schoolid"]
 		openid = request.form.get("openid")
