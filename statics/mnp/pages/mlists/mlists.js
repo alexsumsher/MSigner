@@ -71,10 +71,11 @@ Page({
    */
   onReady: function () {
     app.globalData.meetings.forEach((m)=>{
-      if (m.status === 3){
-        m.off = true;
-      }else{
+      if (m.status === 0){
+        // 只有未签到才能请假
         m.off = false;
+      }else{
+        m.off = true;
       }
     })
     this.setData({ meetings: getApp().globalData.meetings });

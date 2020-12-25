@@ -13,7 +13,7 @@ from flask import Flask, request, send_from_directory, send_file, redirect, url_
 from werkzeug.utils import secure_filename
 from ultilities import check_client, json_flat_2_list
 
-from tschool import myschool, pmsgr, app_school
+from tschool import obj2org, myschool, pmsgr, app_school
 import wxmnp
 from sys_config import cur_config, loger, DateEncoder
 from modules import meeting as MEETING, attenders as ATTENDERS, mroom as MROOM, user_tbl as USER
@@ -43,16 +43,15 @@ def back_system():
 	# 管理操作：
 	# 已注册的学校列表
 	rtdata = {'success': 'yes', 'msg': 'done', 'code': 0, 'data': None, 'dlen': 0}
+	target = request.args.get("target")
+	action = request.args.get("action")
 	if request.method == 'GET':
-		system_code = request.args.get("syscode")
-		if syscode != cur_config.system("syscode"):
-			return abort(403)
-		target = request.args.get("target")
-		action = request.args.get("action")
-		if target == 'schools':
-			if action == 'list':
-				rtdata['data'] = system.on_school("list")
-		return json.dumps(rtdata, cls=DateEncoder)
+		if target is None:
+			if session['admin'] == 'system':
+				return send_file("statics/htmls/sys_admin.html", mimetype="text/html")
+			else:
+				return abort(404)
+	return json.dumps(rtdata, cls=DateEncoder)
 
 # =================================================  NORMAL PAGES  ====================================================
 # =================================================  NORMAL PAGES  ====================================================
@@ -61,18 +60,49 @@ def back_system():
 def mobile():
 	pass
 
+@app.route("/login", methods=['GET', 'POST'])
+def login():
+	if request.method == 'GET':
+		print(request.args)
+		if len(request.args) == 0:
+			return send_file("statics/htmls/login.html", mimetype="text/html")
+		return abort(401)
+	# POST
+	params = request.form.to_dict()
+	print(params)
+	rtdata = {'success': 'yes', 'msg': 'done', 'code': 0, 'data': None, 'dlen': 0}
+	rt = None
+	# login
+	action = request.args.get("action")
+	objid = params['objid']
+	username = params['username']
+	password = params['password']
+	if username == 'sysadm' and password == cur_config.system("syscode"):
+		session['admin'] = 'system'
+		rt = '/system'
+	elif action == 'login':
+		rt = user_actions.login(objid, username, password)
+	elif action == 'regist':
+		# regist base from webclient
+		# return: auto generated userid(length == 18)
+		rt = user_actions.user_regist(objid, username, password)
+	if rt is None or rt is False:
+		rtdata['success'] = "no"
+	else:
+		rtdata['data'] = rt
+	return json.dumps(rtdata, cls=DateEncoder)
+
 @app.route('/')
 @app.route('/index', methods=['GET', 'POST'])
 def index():
 	# 用户态登录
 	# /?objectid=2XaxJgvRj6Udone&objType=2&userid=2y7M3LPNb4odone&timestamp=1586688086&sign=BAC3CB4662B8F8F96794E92780D9E14E
 	rtdata = {'success': 'yes', 'msg': 'done', 'code': 0, 'data': None, 'dlen': 0}
-	objid = request.args.get("objectid", "2XaxJgvRj6Udone")
+	objid = request.args.get("objectid") or session.get("objectid")
 	userid = request.args.get("userid") or session.get("userid")
 	if not userid:
 		print("un user---for test set to...")
-		userid = 'ytVAOSEv75cdone'
-		#userid = '2y7M3LPNb4odone'
+		return redirect(url_for('login'))
 	if request.method == 'GET':
 		if not userid:
 			return abort(404)
@@ -125,7 +155,7 @@ def index():
 
 @app.route("/group", methods=['GET', 'POST'])
 def group():
-	objid = request.args.get("objectid", "2XaxJgvRj6Udone")
+	objid = request.args.get("objectid") or session.get("objectid")
 	# 新增组织（学校）；未注册; may redirect from index
 	if not objid:
 		return "请从智慧校园平台登入！"
@@ -136,13 +166,16 @@ def group():
 @app.route("/school", methods=['GET'])
 def school():
 	# get school date
+	# 分离社会org和智慧校园school
 	rtdata = {'success': 'yes', 'msg': 'done', 'code': 0, 'data': None, 'dlen': 0}
-	objid = request.args.get("objectid", "2XaxJgvRj6Udone")
+	objid = request.args.get("objectid") or session.get("objectid")
+	print(objid)
 	#objid = request.args.get("objectid") or cur_config.cnf_get("default_objid")
-	userid = request.args.get('userid', 'alex')
-	school = myschool.myschool(objid)
+	userid = request.args.get('userid') or session.get('userid')
+	school = obj2org(objid)
+	#school = myschool.myschool(objid)
 	action = request.args.get("action")
-	if action == 'developments':
+	if action == 'departments':
 		datas = school.col_departments(2)
 	elif action == 'schoolinfo':
 		datas = school.schoolinfo()
@@ -171,7 +204,7 @@ def wxuser():
 		openid = request.args.get("openid")
 		# update: reg with jscode
 		wx_rsp = wxmnp.wx_logon(js_code)
-		if wx_rsp.get('errcode', 0) == 0:
+		if wx_rsp and wx_rsp.get('errcode', 0) == 0:
 			openid = wx_rsp['openid']
 			#成功通讯weixin-server; 确认是否存在
 			#userid = USER.user_by_openid(openid)
@@ -250,7 +283,7 @@ def wxuser():
 		js_code = request.form.get("js_code")
 		if not openid and js_code:
 			wx_rsp = wxmnp.wx_logon(js_code)
-			if wx_rsp.get('errcode', 0) == 0:
+			if wx_rsp and wx_rsp.get('errcode', 0) == 0:
 				openid = wx_rsp['openid']
 			else:
 				rtdata['success'] = 'no'
@@ -260,7 +293,7 @@ def wxuser():
 			rtdata['success'] = 'no'
 			rtdata['msg'] = '未获得登陆码(js_code)'
 			return json.dumps(rtdata)
-		user = user_actions.login(schoolid, password, openid, userid=userid)
+		user = user_actions.login_wx(schoolid, password, openid, userid=userid)
 		print(user)
 		if user:
 			rtdata['data'] = {'userid': user.extdata}
@@ -325,13 +358,12 @@ def statics(fd='', filen=''):
 			fd = ''
 	return send_from_directory(os.path.join(cur_config.folder('static_fd'), fd), filen)
 
-print('main-step1')
 # =================================================  BIND PAGES  ====================================================
 # =================================================  BIND PAGES  ====================================================
 app.add_url_rule('/api/<target>', 'api', API, methods=['GET', 'POST'])
 app.add_url_rule('/resource/<target>', 'resource', RESOURCE, methods=['GET'])
 app.add_url_rule('/debuging', 'debuging', debuging, methods=['GET', 'POST'])
-print('main-step2')
+
 if __name__ == '__main__':
 	app.debug = True
 	app.run(host='0.0.0.0', port=7890)

@@ -82,6 +82,8 @@ view.itemlist {
   font-size: larger;
   font-weight: bold;
   margin-bottom: 12px;
+  border-bottom: 1px solid gray;
+  padding-bottom: 10px;
 }
 
 .input_ctrl {

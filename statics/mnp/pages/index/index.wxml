@@ -12,7 +12,7 @@
   </view>
   <view wx:if="{{ustatus>=2}}"  class="centerboard">
     <view class="title">
-      <text>{{sch_name}}最近的会议</text>
+      <text>{{sch_name}}</text><text style="font-size: small;vertical-align:text-bottom;margin-left:1em;color:#555555">最近会议</text>
     </view>
     
     <view class="itemlist">
@@ -92,7 +92,7 @@
       <text>基于腾讯智慧校园的会议签到系统小程序端(华拓)</text>
       <view>https://attend.hitouch.cn</view>
       <view>
-      <text>version: 1.1</text>
+      <text>version: {{version}}</text>
       </view>
     </view>
   </view>

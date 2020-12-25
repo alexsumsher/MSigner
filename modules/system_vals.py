@@ -33,6 +33,9 @@ class sysconsts(Qer):
     KEY `_ikey` (ikey)\
     )ENGINE = InnoDB AUTO_INCREMENT=1 CHARSET=utf8;"""
     # status: 0-normal; delete(markmode): -1;
+    STA_NORMAL = 1
+    STA_UNSET = 0
+    STA_OFF = -1
 
     @classmethod
     def ini_table(cls, tblname=''):
@@ -147,10 +150,11 @@ class sysconsts(Qer):
         return self
         
     def data(self, idx=0, key=None, subkey=None, onlyval=False):
+        qstr = ','.join(self.__class__.main_keys)
         if idx:
-            dbrt = self.con.query_db('SELECT * FROM %s WHERE idx=%s AND status>=0' % (self.work_table, idx), one=True)
+            dbrt = self.con.query_db('SELECT %s FROM %s WHERE idx=%s AND status>=0' % (qstr, self.work_table, idx), one=True)
         elif key:
-            dbrt = self.con.query_db('SELECT * FROM %s WHERE type="%s" AND ikey="%s"' % (self.work_table, self.type, key), one=True)
+            dbrt = self.con.query_db('SELECT %s FROM %s WHERE type="%s" AND ikey="%s"' % (qstr, self.work_table, self.type, key), one=True)
         else:
             raise ValueError("one of idx/key should be given!")
         if dbrt:
@@ -204,7 +208,7 @@ class sysconsts(Qer):
 
     def simplelist(self, bysubtype=None, byextdata=None, filterstr=None, k_v_mode=False, quick=True):
         # JUST LIST ALL
-        sqlcmd = 'SELECT %s FROM %s WHERE type="%s"' % (self.quick_list if quick else '*', self.work_table, self.type)
+        sqlcmd = 'SELECT %s FROM %s WHERE type="%s"' % (self.quick_list if quick else ','.join(self.__class__.main_keys), self.work_table, self.type)
         if bysubtype:
             sqlcmd += ' AND subtype="%s"' % bysubtype
         if byextdata:
@@ -268,7 +272,7 @@ class sysconsts(Qer):
                 return -1
         if self.encoder and value:
             value = self.encoder(value)
-        sqlcmd = 'INSERT INTO %s(type,subtype,ikey,title,value,value_int,extdata) VALUES("%s", "%s", %s", "%s", "%s", %d, "%s")' % \
+        sqlcmd = 'INSERT INTO %s(type,subtype,ikey,title,value,value_int,extdata) VALUES("%s", "%s", "%s", "%s", "%s", %d, "%s")' % \
         (self.work_table, self.type, subtype, key, title, value, value_int, extdata)
         return self.con.execute_db(sqlcmd, get_ins_id=True)
 
@@ -303,19 +307,31 @@ class sysconsts(Qer):
         else:
             raise RuntimeError("Counld not clear type: %s" % self.type)
 
-    def delitem(self, idx, bymark=False):
+    def delitem(self, idx=0, ikey="", bymark=False):
+        wstr = 'idx=%d' % idx if idx > 0 else 'type="%s" AND ikey="%s"' % (self.type, ikey)
         if bymark:
-            sqlcmd = 'UPDATE %s SET status=-1 WHERE idx=%s' % (self.work_table, idx)
+            sqlcmd = 'UPDATE %s SET status=-1 WHERE %s' % (self.work_table, wstr)
         else:
-            sqlcmd = 'DELETE FROM %s WHERE idx=%s' % (self.work_table, idx)
+            sqlcmd = 'DELETE FROM %s WHERE %s' % (self.work_table, wstr)
         return self.con.execute_db(sqlcmd)
 
-    def set_value(self, idx, value, value_int=0):
-        sqlcmd = 'UPDATE %s SET value="%s",value_int=%d' % (self.work_table, value, value_int)
+    def set_value(self, idx=0, ikey="", value="", value_int=None):
+        ustr = 'value="%s"' % value
+        if isinstance(value_int, int):
+            ustr += ' value_int=%d' % value_int
+        if idx:
+            sqlcmd = 'UPDATE %s SET %s WHERE idx=%d' % (self.work_table, ustr, idx)
+        elif ikey:
+            sqlcmd = 'UPDATE %s SET %s WHERE type="%s" AND ikey="%s"' % (self.work_table, ustr, self.type, ikey)
+        else:
+            return False
         return True if self.con.execute_db(sqlcmd) else False
 
-    def set_valueint(self, idx, value_int):
-        sqlcmd = 'UPDATE %s SET value_int=%d' % (self.work_table, value_int)
+    def set_valueint(self, idx=0, ikey="", value_int=0):
+        if idx:
+            sqlcmd = 'UPDATE %s SET value_int=%d WHERE idx=%d' % (self.work_table, value_int, idx)
+        elif ikey:
+            sqlcmd = 'UPDATE %s SET value_int=%d WHERE type="%s" AND ikey="%s"' % (self.work_table, self.type, ikey)
         return True if self.con.execute_db(sqlcmd) else False
 
     def moditem(self, idx, subtype=None, key='', title='', value='', value_int=0, extdata=''):

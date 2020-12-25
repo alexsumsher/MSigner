@@ -5,13 +5,13 @@ from flask import request, session, abort
 from tschool import myschool, pmsgr
 from sys_config import cur_config, loger, DateEncoder
 from modules import meeting as MEETING, attenders as ATTENDERS, mroom as MROOM, user_tbl as USER
-from actions import mgr_actions, user_actions, system
+from actions import mgr_actions, user_actions, data_handler
 
 
 def RESOURCE(target=""):
 	# 在智慧校园系统中 session丢失
 	rtdata = {'success': 'yes', 'msg': 'done', 'code': 0, 'data': None, 'dlen': 0}
-	objid = request.args.get('objectid', "2XaxJgvRj6Udone")
+	objid = request.args.get('objectid') or session.get("objectid") or "2XaxJgvRj6Udone"
 	userid = request.args.get('userid') or session.get('userid')
 	print(session)
 	userid = userid or 'anonymouse'
@@ -135,6 +135,12 @@ def RESOURCE(target=""):
 				rtdata['data'] = None
 				rtdata['success'] = 'no'
 	elif target == 'school':
-		userid = request.args.get("userid")
-		user_hanlder = user_actions(objid)
+		if action == 'list':
+			as_option = request.args.get("as_option") == 'yes'
+			dh = data_handler()
+			rt = dh.list_schools(as_opts=as_option)
+			if rt:
+				rtdata['data'] = rt
+			else:
+				rtdata['success'] = 'no'
 	return json.dumps(rtdata, cls=DateEncoder)

@@ -1,6 +1,8 @@
 import datetime
 from modules import sysconsts
 
+VINT_REGED = 1
+VINT_UNREGED = 0
 
 
 def on_school(action, *args, **kwargs):
@@ -11,8 +13,6 @@ def on_school(action, *args, **kwargs):
 	title: school_name
 	status: 0-normal
 	"""
-	VINT_REGED = 1
-	VINT_UNREGED = 0
 	if action == 'get':
 		return sysconsts('schools').data(key=args[0])
 	elif action == 'list':

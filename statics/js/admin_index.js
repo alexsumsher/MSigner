@@ -83,10 +83,25 @@ FUNCS = {
 	load_departments: function(callback){
 		//加载部门
 		// 测试数据,不通过智慧校园端访问
-		$.getJSON(_exec.make_urlparam({userid: 'alex', objectid: '2XaxJgvRj6Udone', action: 'developments'}, "/school"), function(rsp){
+		//$.getJSON(_exec.make_urlparam({userid: 'alex', objectid: '2XaxJgvRj6Udone', action: 'departments'}, "/school"), function(rsp){
+		let uid = sessionStorage['userid'] || "";
+		let req_params = {action: 'departments', userid: uid};
+		if (_env.org_type === 'school'){
+			// 暂时默认为南油
+			req_params.objectid = "2XaxJgvRj6Udone";
+		} else {
+			req_params.objectid = sessionStorage['objid'];
+		}
+		$.getJSON(_exec.make_urlparam(req_params, "/school"), function(rsp){
 			if (rsp && rsp.data){
 				_departments = rsp.data;
-				// for set 建立映射部门-名称
+				// 测试阶段避免空值
+				if (_departments.length <= 1){return;}
+				if (_env.org_type === 'organize'){
+					// TODO: pre handle departments to school datatype[if needed]
+					return;
+				}
+				// for set 建立映射部门-名称 for school
 				let _dps = [..._departments];
 				let n = _dps.shift(), c = 0;
 				while(n){
@@ -116,9 +131,6 @@ FUNCS = {
 // PART of PAGER
 page_initor('meeting', function(){
 	// comon
-	if (!_departments){
-		FUNCS.load_departments();
-	}
 	if (serverdata){
 		_env.userid = serverdata.userid;
 	}
@@ -348,7 +360,7 @@ page_collector.bind_ini("meeting", function(){
 			['删除', 'act4', function(r){
 				if (!confirm("确定删除？不能恢复!")){return;}
 				let rdata = $("#meeting_tbl").data("stable").selections;
-				$.post("/api/meeting?action=delete", {mid: rdata.mid, mcount:rdata.counting}, function(rsp){
+				$.post("/api/meeting?action=delete", {mid: rdata.mid, mcount:rdata.counting, userid: _env.userid}, function(rsp){
 					if (rsp && rsp.success === 'yes'){
 						imsger.show("成功");
 						$("#meeting_tbl").stable("go_page", 1, null, null, true);
@@ -419,7 +431,7 @@ page_collector.bind_ini("mroom", function(){
 					alert("wrong selection");
 					return;
 				}
-				dlg_mgm._$dlg("mroom").url = '/api/mroom?action=modify';
+				dlg_mgm._$dlg("mroom").url = '/api/mroom?action=modify&userid=' + _env.userid;
 				dlg_mgm.opendlg('mroom', sel_data, '编辑：' + sel_data['name']);
 				// set for sign_mode:
 				if (sel_data.sign_mode == 1){
@@ -437,7 +449,7 @@ page_collector.bind_ini("mroom", function(){
   });
 	// UI ACTIONS
 	document.getElementById("btn_addmroom").onclick = function(){
-		dlg_mgm._$dlg("mroom").url = '/api/mroom?action=new';
+		dlg_mgm._$dlg("mroom").url = '/api/mroom?action=new&userid=' + _env.userid;
 		dlg_mgm.opendlg("mroom", null, '新增会议室', function(){
 			// load and list departments
 		});
@@ -486,7 +498,7 @@ page_collector.bind_ini('attenders', function(){
 				if(!confirm("确定删除？")){
 					return;
 				}
-				$.post("/api/attenders?action=delete", {
+				$.post("/api/attenders?action=delete&userid=" + _env.userid, {
 					mid: _PGC.$("cur_meeting"),
 					aid: row.aid,
 					mcount: $("#attenders_tbl").data('stable').filter_params.mcount
@@ -506,12 +518,13 @@ page_collector.bind_ini('attenders', function(){
 				let target_roleid;
 				if(row.roleid === 1 && confirm("用户已经是管理员，是否要调整为普通用户？")){
 					target_roleid = 0;
-				}else if (row.roleid === 0 && confirm("用户调整为会议管理员？")){
+				}else if ((row.roleid == "" || row.roleid === 0) && confirm("用户调整为会议管理员？")){
 					target_roleid = 1;
 				}
-				$.post("/api/attenders?action=role", {
+				$.post("/api/attenders?action=role&userid=" + _env.userid, {
 					mid: _PGC.$("cur_meeting"),
-					aid: row.aid, roleid: target_roleid,
+					aid: row.aid,
+					roleid: target_roleid,
 					mcount: $("#attenders_tbl").data('stable').filter_params.mcount
 				}, function(rsp){
 					if(rsp && rsp.success === 'yes'){
@@ -543,7 +556,7 @@ page_collector.bind_ini('attenders', function(){
 			alert("未指定会议！");
 			return;
 		}
-		$.post("/api/attenders?action=clear", {
+		$.post("/api/attenders?action=clear&userid=" + _env.userid, {
 			mid: _PGC.$("cur_meeting"),
 			mtimes: -1,
 			mcount: $("#attenders_tbl").data('stable').filter_params.mcount
@@ -651,7 +664,7 @@ page_collector.bind_ini("schoolusers", function(){
 	_PGC.$("dlg_withsubs", false);
 	// INITAL TABLE
 	$("#schoolusers_tbl").stable({
-		source_url: '/resource/users?action=list', 
+		source_url: '/resource/users?action=list&objectid=' + _env.schoolid, 
 		filter_params: null,
 		tbl_bar: '#schoolusers_bar',
 		key_name: 'uid',
@@ -676,7 +689,7 @@ page_collector.bind_ini("schoolusers", function(){
 				content = prompt("输入内容");
 				if (content){
 					let row = $("#schoolusers_tbl").data("stable")['selections'];
-					$.post("/api/message?action=send_user", {wxuserid: row.wxuserid, content: content}, function(rsp){
+					$.post("/api/message?action=send_user&userid=" + _env.userid, {wxuserid: row.wxuserid, content: content}, function(rsp){
 						//console.log(rsp);
 					}, 'json');
 				}
@@ -872,7 +885,7 @@ page_collector.bind_ini("meeting_create", function(){
 			delete params.name;
 			delete params.rpmode;
 		}
-		$.post('/api/meeting?action=' + _PGC.$("work_mode"), params, function(rsp){
+		$.post('/api/meeting?action=' + _PGC.$("work_mode") + "&userid=" + _env.userid, params, function(rsp){
 			if(rsp && rsp.success === 'yes'){
 				if(!rsp.data || rsp.data.mid < 0){
 					emsger.show("提交成功，但是服务器错误，操作失败!");
@@ -976,7 +989,7 @@ dlg_mgm.inital({
 			if (params['sign_mode'] == 0){
 				params['room_identifier'] = "";
 			}
-			this.post_form($dlg, "/api/mroom?action=" + _PGC.$("m_dlg_mode"), params);
+			this.post_form($dlg, "/api/mroom?action=" + _PGC.$("m_dlg_mode") + "&userid=" + _env.userid, params);
 		},
 		on_changes: {
 			'sign_mode': function(n,v){
@@ -1063,14 +1076,14 @@ dlg_mgm.inital({
 			}
 			//console.log(seled_opts);
 			if (for_win === 'attenders'){
-				url = '/api/attenders?action=add';
+				url = '/api/attenders?action=add&userid=' + _env.userid;
 				params = {
 					mid: _PGC.$("cur_meeting"),
 					attenders: seled_opts,
 					mcount: $("#attenders_tbl").data('stable').filter_params.mcount
 				};
 			} else if (for_win === 'schoolusers'){
-				url = '/api/users?action=import';
+				url = '/api/users?action=import&userid=' + _env.userid
 				params = {users: seled_opts};
 			} else {return;}
 			this.post_form($dlg, url, params);
@@ -1095,10 +1108,36 @@ $(document).ready(function(){
 		format: 'hh:ii'
 	}).on('changeDate', function(ev){_PGC.$$("ipt_ontime", ev.date.toISOString().substr(11,5))});
 	
+	// LOGOUT btn
+	document.getElementById("topbtn_logout").addEventListener("click", function(evt){
+		sessionStorage['userid'] = "";
+		sessionStorage['objid'] = "";
+		sessionStorage['orgtype'] = "";
+		window.location.href = "/login";
+	});
+	
 	$.getJSON("/school?action=schoolinfo", function(rsp){
 		if(rsp && rsp.success === 'yes'){
-			document.getElementById("logoimg").src = "https://p.qpic.cn/smartcampus/0/" + rsp.data.logo + "/0";
+			let logourl = rsp.data.logo;
+			if (logourl.startsWith("/img")){
+				document.getElementById("logoimg").src = logourl;
+			}else{
+				document.getElementById("logoimg").src = "https://p.qpic.cn/smartcampus/0/" + rsp.data.logo + "/0";
+			}
+			// 如果显式给出orgtype === organize为普通机构
+			if (rsp.data.org_type === "organize"){
+				_env.org_type = "organize";
+				_env.objid = rsp.data.objid;
+				_env.schoolid = rsp.data.objid;
+			} else {
+				_env.org_type = "school";
+			}
 			document.getElementById("logotext").textContent = rsp.data.name;
+			// LOAD departments
+			if (!_departments){
+				// 默认加载
+				FUNCS.load_departments();
+			}
 		}
 	});
 });

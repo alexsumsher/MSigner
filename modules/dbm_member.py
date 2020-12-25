@@ -110,7 +110,7 @@ class attenders(simple_tbl):
 	@classmethod
 	def wx_attender(cls, mid, mtimes=0):
 		# 列出参会人员，仅wxuserid
-		sqlcmd = 'SELECT wxuserid FROM %s WHERE mid=%s AND mtimes=%d AND wxuserid is not NULL' % (cls.work_table, mtimes, mid)
+		sqlcmd = 'SELECT wxuserid FROM %s WHERE mid=%s AND mtimes=%d AND wxuserid is not NULL' % (cls.work_table, mid, mtimes)
 		return cls._con_pool.query_db(sqlcmd, single=True)
 
 	@classmethod
@@ -134,6 +134,8 @@ class attenders(simple_tbl):
 					legal_users.append(u)
 			if len(legal_users) == 0:
 				return 0
+		else:
+			legal_users = users
 		value_str = '('
 		sqlcmd = 'INSERT INTO %s(mid,mtimes,userid,wxuserid,username,roleid) VALUES %s'
 		value_str += '),('.join(['%s,%s,"%s","%s","%s",%s' % (mid, mtimes, u['userid'], u['wxuserid'], u['username'], u.get('roleid', 0)) for u in legal_users]) + ')'

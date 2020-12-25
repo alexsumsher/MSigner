@@ -9,11 +9,54 @@ import time
 
 from libs import binfile
 from tschool import appmsg_sets, appmsg_sets2, capp_smsg, thirdsvr2, assist_svr
-from modules import sysconsts
+from modules import sysconsts, user_tbl as USERS
 from ultilities import dict_search2, dict_search3
 from sys_config import cur_config, loger
 from actions import on_school
+
 #from cur_config_test import cur_config, logging
+
+
+def obj2org(objid):
+    print(objid)
+    dbrt = sysconsts('schools').data(key=objid)
+    if dbrt['subtype'] == 'school':
+        return myschool.myschool(objid)
+    return organize(objid, dbrt['idx'], dbrt['title'])
+
+
+class organize(object):
+    # subtype == 'organize' = 1
+    
+    def __init__(self, objid, idx=0, orgname=""):
+        self.objid = objid
+        self.idx = idx
+        self.name = orgname
+        self.stype = 1
+
+    def col_departments(self, dpid):
+        """
+        data-structrue:
+        department_node: {departid, departname, child: [list-of-sub-deparment_node]}
+        [{top_department0-departid, top_department0-departname, top_department0-child:[
+            td0_sub0-departid, td0_sub0-departname, td0_sub0-child: [...]
+        ], top_deparment1, ...]
+        """
+        return []
+
+    def schoolinfo(self):
+        return {
+            "name": self.name, 
+            "logo": "/imgs/company pay.png",
+            "edu_type": "8",
+            "org_type": "organize",
+            "objid": self.objid
+        }
+
+    def col_dep_tearchers(self, dpid=0, lv=0):
+        # get all users
+        return USERS.list_users(objid=self.objid)
+
 
 class app_school(thirdsvr2):
     token = cur_config.app_token
@@ -28,6 +71,7 @@ class app_school(thirdsvr2):
 
 #class myschool(thirdsvr2):
 class myschool(assist_svr):
+    # subtype == 'school' = 0
     SCHOOLS = {}
     #token = thirdsvr2.gen_token(cur_config.token())  devCode+devType+keyId
 

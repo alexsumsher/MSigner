@@ -268,6 +268,7 @@ window._exec = {
 			}
 			_o.textContent = o[map_title];
 			_o.value= o[map_value];
+			if(!exts){return}
 			exts.forEach((n)=>{
 				_o.dataset[n] = o[n];
 			});

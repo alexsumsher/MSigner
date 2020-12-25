@@ -5,14 +5,25 @@ import logging
 from libs import Qer
 from modules import attenders as ATTENDERS, mroom as MROOM, meeting as METTING, user_tbl as USERS
 from modules import mnode, Mqueue
+from assists import code_gender
 
 loger = logging.getLogger()
 
 # FROM USER SIDE: date is string;
 class user_actions(Qer):
+	# auto_allow: 允许用户注册后即可登陆
+	AUTO_COMPELTE = True
 
 	@classmethod
-	def login(cls, objid, userpwd, openid, userid="", username=""):
+	def login(cls, objid, username, password):
+		sqlcmd = 'SELECT userid,password FROM %s WHERE username="%s" AND objid="%s" AND status>0 LIMIT 1' % (USERS.work_table, username, objid)
+		dbrt = cls._con_pool.query_db(sqlcmd, one=True)
+		if dbrt and dbrt[1] == password:
+			return dbrt[0]
+		return False
+
+	@classmethod
+	def login_wx(cls, objid, userpwd, openid, userid="", username=""):
 		if userid:
 			sqlcmd = 'SELECT userid,openid,password FROM %s WHERE userid="%s" AND objid="%s" AND status>0 LIMIT 1' % (USERS.work_table, userid, objid)
 		elif username:
@@ -25,6 +36,22 @@ class user_actions(Qer):
 			u = cls(objid)
 			u.extdata = dbrt[0]
 			return u
+
+	@classmethod
+	def user_regist(cls, objid, username, password):
+		# 为了对齐（兼容）自动生成用户id[userid string length <= 18]
+		test_cmd = 'SELECT userid FROM %s WHERE objid="%s" AND username="%s"' % (USERS.work_table, objid, username)
+		dbrt = cls._con_pool.query_db(test_cmd, one=True)
+		if dbrt:
+			# conflict
+			return False
+		userid = code_gender(18)
+		if cls.AUTO_COMPELTE:
+			sta = USERS.STA_NORMAL
+		else:
+			sta = USERS.STA_UNREG
+		uid = USERS.reg_new(userid, objid, username, password, status=sta)
+		return uid
 
 	def __init__(self, objid, session=None):
 		self.objid = objid

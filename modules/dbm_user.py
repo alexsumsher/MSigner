@@ -43,8 +43,9 @@ class user_tbl(simple_tbl):
 	# openid: 从微信访问注册时的识别名
 	
 	@classmethod
-	def reg_new(cls, userid, objid, username, wxname="", phonenumber="", regdtime=None):
-		form = dict(userid=userid, objid=objid, username=username, wxname=wxname, phonenumber=phonenumber, regdtime=regdtime or DT.today())
+	def reg_new(cls, userid, objid, username, password, wxuserid="", wxname="", phonenumber="", regdtime=None, status=0):
+		# reg by pc, with tencent school
+		form = dict(userid=userid, objid=objid, username=username, password=password, wxuserid=wxuserid, wxname=wxname, phonenumber=phonenumber, regdtime=regdtime or DT.today(), status=status)
 		return cls._manage_item('new', orign_data=form)
 
 	@classmethod

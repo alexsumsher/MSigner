@@ -7,15 +7,15 @@ from ultilities import json_flat_2_list
 from tschool import myschool, pmsgr, app_school
 from sys_config import cur_config, loger, DateEncoder
 from modules import meeting as MEETING, attenders as ATTENDERS, mroom as MROOM, user_tbl as USER
-from actions import mgr_actions, user_actions, system
+from actions import mgr_actions, user_actions, system, admin
 
 #/?objectid=2XaxJgvRj6Udone&objType=2&userid=2y7M3LPNb4odone&timestamp=1586688086&sign=BAC3CB4662B8F8F96794E92780D9E14E
 def API(target):
 	rtdata = {'success': 'yes', 'msg': 'done', 'code': 0, 'data': None, 'dlen': 0}
-	objid = request.args.get('objectid', "2XaxJgvRj6Udone")
+	objid = request.args.get('objectid') or session.get("objectid") or "2XaxJgvRj6Udone"
 	userid = request.args.get('userid') or session.get('userid')
 	#userid = session.get('userid')
-	if not userid:
+	if not userid and session.get("admin") != 'system':
 		loger.error("no userid from session!")
 		rtdata['success'] = 'no'
 		rtdata['msg'] = "未登录"
@@ -153,11 +153,29 @@ def API(target):
 			ischool = app_school(objid)
 			msger = pmsgr(ischool, msgtype, content)
 			msger.send2user(wxuserid)
+	elif target == 'school':
+		# works on organizations...
+		# first: check admin session:
+		if session.get("admin") != 'system':
+			rtdata['msg'] = "权限不足"
+			rt = False
+		handler = admin()
+		if action == 'add':
+			rt = handler.handle_organization(action='new', **params)
+		elif action == 'delete':
+			idx = int(params.pop('idx'))
+			rt = handler.handle_organization(action='delete', idx=idx)
+		elif action == 'modify':
+			if 'idx' not in params:
+				rt = False
+			else:
+				idx = int(params.pop('idx'))
+				rt = handler.handle_organization(action='modify', idx=idx, **params)
 	else:
 		loger.error("unknown comd!")
 		rt = False
 	# rt: return value, most of times is return from execute_db, which will return False if not success!
-	if not rt:
+	if rt is None or rt is False:
 		rtdata['success'] = 'no'
 		if handler:
 			rtdata['msg'] = handler.emsg

@@ -26,7 +26,9 @@ Page({
       name: '当日无后续会议',
       roomname: '',
       identify_key: '',
-    }
+    },
+    // others
+    version: "1.1d"
   },
   // vars
   regcode: null,
@@ -39,7 +41,40 @@ Page({
     openid: null,
     empty_meeting: { mid: 0, name: "NO", },
   },
-
+  // ASIST FUNCS
+  _get_uinfo: function(){
+    wx.getSetting({
+      success: res => {
+        if (res.authSetting['scope.userInfo']) {
+          // 已经授权，可以直接调用 getUserInfo 获取头像昵称，不会弹框
+          wx.getUserInfo({
+            success: res => {
+              // 可以将 res 发送给后台解码出 unionId
+              app.globalData.userInfo = res.userInfo
+              this.setData({userInfo: res.userInfo,  hasUserInfo: true});
+            }
+          })
+        } else {
+          console.error("无用户info权限，获取中。。。");
+          wx.authorize({
+            scope: 'scope.userInfo',
+            success (){
+              console.log("uinfo已经授权。")
+              wx.getUserInfo({
+                success: res => {
+                  app.globalData.userInfo = res.userInfo;
+                  this.setData({userInfo: res.userInfo,  hasUserInfo: true});
+                },
+                fail(){console.error("已授权但无法获取uinfo")}
+              })
+            },
+            fail(){console.error("wx.authorize: 无法获取用户信息权限！");}
+          })
+        }
+      },
+      fail(){console.error("Failure on getSetting.")}
+    })
+  },
   logout: function(){
     // exit->login/reg
     this.setData({ustatus: 1, userid: null});
@@ -88,36 +123,6 @@ Page({
   goBeacon: function(){
     wx.navigateTo({
       url: '../beacontest/ibeacon',
-    })
-  },
-  goSign: function(){
-    setTimeout(()=>{
-      wx.showToast({
-        title: '签到成功！',
-      });
-      this.setData({ sign_status: 'signed', sign_text: '已签到'});
-    }, 450);
-  },
-  goSign2: function(){
-    if (this._env.working){
-      // turn off
-      signer.do_beacon(-1);
-      this._env.working = false;
-      return;
-    }
-    this._env.working = true;
-    const onok = (data)=>{
-      wx.showToast({
-        title: data.ble[0].mac,
-      });
-      this.setData({ sign_status: 'signed', sign_text: '已签到' });
-      signer.do_beacon(-1);
-    };
-    signer.do_beacon(5, null, onok);
-  },
-  testSign: function(){
-    wx.showToast({
-      title: '签到!',
     })
   },
 
@@ -311,10 +316,11 @@ Page({
           app.globalData.userid = rsp.userid;
           app.globalData.openid = rsp.openid;
         } else {
-          wx.showLoading({
+          wx.showModal({
             title: '失败',
-            content: '自动登陆失败，请（名称或手机号）\n登陆或注册。'
-          })
+            content: '自动登陆失败，请（名称或手机号）\n登陆或注册。',
+            cancelColor: 'cancelColor',
+          });
           //page.load_schools();
           page.setData({ ustatus: 0});
         }
@@ -403,42 +409,21 @@ Page({
   },
 
   onLoad: function () {
-    if (app.globalData.userInfo) {
-      this.setData({
-        userInfo: app.globalData.userInfo,
-        hasUserInfo: true
-      })
-      this.autologin();
-    } else if (this.data.canIUse){
-      // 由于 getUserInfo 是网络请求，可能会在 Page.onLoad 之后才返回
-      // 所以此处加入 callback 以防止这种情况
-      app.userInfoReadyCallback = res => {
-        this.setData({
-          userInfo: res.userInfo,
-          hasUserInfo: true
-        })
+    wx.login({
+      success: res => {
+        app.globalData.wxlogin = true;
+        app.globalData.login_code = res.code;
         this.autologin();
-      }
-    } else {
-      // 在没有 open-type=getUserInfo 版本的兼容处理
-      wx.getUserInfo({
-        success: res => {
-          app.globalData.userInfo = res.userInfo
-          this.setData({
-            userInfo: res.userInfo,
-            hasUserInfo: true
-          })
-          this.autologin();
-        }
+        this._get_uinfo();
+    },
+    fail: ()=>{
+      wx.showModal({
+        title: "错误：",
+        content: "无法登陆用户！",
+        cancelColor: 'cancelColor',
       })
     }
-    
-    /* set meetings
-    this._env.meettings = [];
-    let m1 = this._meeting_generator();
-    console.log(m1);
-    this.setData({ next_meeting: m1});
-    */
+  })
   },
 
   onReady: function(){
@@ -516,6 +501,10 @@ Page({
               title: '无会议',
               icon: 'none'
             })
+          } else {
+            wx.showToast({
+              title: '会议更新完成',
+            })
           }
           if (meetings && meetings.length > 0){
             // range for next meeting
@@ -538,23 +527,37 @@ Page({
                 smin = dt;
               }
             });
-            if (m1){
-              this.setData({ next_meeting: m1, status: m1.status == 1 ? "signed" :"unsigned" });
-            } else{
-              // 全部签到或过时，选择最后一个
+            if (!m1){
               console.log("no next meeting");
-              m1 = meetings[meetings.length-1];
-              if (!m1.signable){
-                return;
-              }
-              this.setData({ next_meeting: m1, status: m1.status == 1 ? "signed" :"unsigned" });
+              // 全部签到过了，当日会议选最后一个
+              m1 = meetings[meetings.length - 1];
+            }
+            if (m1.status == 1){
+              this.setData({next_meeting: m1, sign_status: "signed", sign_text: "已签到"});
+            } else {
+              this.setData({ next_meeting: m1, sign_status :"unsigned", sign_text: "未签到" });
             }
           } else {
             meetings = [];
             app.globalData.meetings = meetings;
+            if (this.data.next_meeting.mid > 0){
+              // clear next meeting
+              this.setData({
+                next_meeting: {mid:0, name: "", sign_mode: 0, counting: 0, roomname: "", nextdtime:"", sign_mode: 0, signable: false},
+                sign_status: "unsigned",
+                sign_text: "未签到"
+              });
+            }
           }
         }
       },
     })
   },
+
+  onShareAppMessage: function(e){
+    return {
+      title: "签到功能",
+      path: "/pages/index/index"
+    }
+  }
 })

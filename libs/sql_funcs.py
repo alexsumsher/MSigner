@@ -198,7 +198,7 @@ class Qer(object):
             for _ in fieldlist:
                 x = t[c]
                 #d[_] = x if isinstance(x, (str, int, float)) else NoneExport if x is None else str(x)
-                d[_] = str(x) if isinstance(x, DT) else x if x else NoneExport
+                d[_] = str(x) if isinstance(x, DT) else x if x is not None else NoneExport
                 c += 1
             return d
         def d2d(D):

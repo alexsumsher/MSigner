@@ -3,7 +3,6 @@ import random
 import string
 from flask import make_response
 import json
-from modules import user_tbl as UTBL
 
 
 def code_gender(length=12, only_char=False, asc_case=0, only_number=False, symbols=False):
@@ -52,6 +51,7 @@ def plus_file_respon(file_input, env_values):
     script_string = b'</body>\r\n<script language="javascript">\r\nconst serverdata=%s</script>' % json.dumps(env_values).encode()
     return fdata.replace(b'</body>\r\n', script_string)
 
+'''
 def wxlogin(userid, password, openid=None):
 	udata = UTBL.user_by_userid(userid)
 	if openid and udata['openid'] != openid:
@@ -60,3 +60,4 @@ def wxlogin(userid, password, openid=None):
 		return True
 	else:
 		return False
+'''

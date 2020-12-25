@@ -15,9 +15,9 @@ from actions import db_writebacker, m_announcer
 loger.debug("starting server now...")
 # 初始化db连接池
 if sys.platform.startswith('win'):
-	com_cons = com_con('test', cur_config.testdb, length=2, debug=True)
+	com_cons = com_con('test', cur_config.testdb, length=4, debug=True)
 else:
-	com_cons = com_con('test', cur_config.dbserver, length=3, debug=True)
+	com_cons = com_con('test', cur_config.dbserver, length=5, debug=True)
 Qer.set_con_pool(com_cons)
 
 # 初始化管理队列
