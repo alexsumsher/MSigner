@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-control" content="no-cache">
+    <meta http-equiv="Cache" content="no-cache">
+    <title>系统管理</title>
+	<link href="https://cdn.bootcss.com/zui/1.9.0/css/zui.min.css" rel="stylesheet">
+	<link href="https://cdn.bootcss.com/zui/1.9.1/lib/datetimepicker/datetimepicker.min.css" rel="stylesheet">
+    <style type="text/css">
+	
+    </style>
+</head>
+<body>
+  <div id="login-page" class="divpage">
+    <div class="container">
+      <div class="panel panel-primary" id="dlg_login" style="margin-top: 10%;width: 50%;margin-left: 25%;text-align: center;">
+        <h2 class="panel-heading">登陆：会议签到系统</h2>
+        <div class="panel-body" style="align-items:center;">
+			<p class="help_info">
+				<i class="icon icon-info-sign"></i>
+				请登陆
+			</p>
+			<select class="form-control" id="organization">
+				<option value="0">组织</option>
+			</select>
+			<br>
+          <input name="username" type="text" class="form-control" placeholder="姓名" autofocus />
+          <br>
+          <input name="password" type="password" class="form-control" placeholder="密码" />
+          <label class="checkbox" style="margin-left: 20px;">
+            <input id="tgl_autopwd" type="checkbox" value="remember-me"> 保存密码
+            <span class="pull-right">
+            <a data-toggle="modal" href="login.html#DLG_forpwd"> 忘记密码?</a>
+            </span>
+            </label>
+          <button class="btn btn-theme btn-block" id="go_login"><i class="icon icon-lock"></i>登陆</button>
+          <hr>
+          <div class="login-social-link centered">
+            <p>其他登陆方式</p>
+            <button class="btn btn-facebook"><i class="icon icon-wechat"></i> WEXIN</button>
+            <button class="btn btn-twitter"><i class="icon icon-qrcode"></i> QRCODE</button>
+          </div>
+          <div class="registration">
+            <a class="" href="#" onclick="go_page('regist-page')">
+              注册
+              </a>
+          </div>
+        </div>
+        <!-- Modal -->
+        <div aria-hidden="true" aria-labelledby="myModalLabel" role="dialog" tabindex="-1" id="DLG_forpwd" class="modal fade">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title">Forgot Password ?</h4>
+              </div>
+              <div class="modal-body">
+                <p>输入您的正确邮箱地址以重置密码。</p>
+                <input type="text" name="email" placeholder="Email" autocomplete="off" class="form-control placeholder-no-fix">
+              </div>
+              <div class="modal-footer">
+                <button data-dismiss="modal" class="btn btn-default" type="button">取消</button>
+                <button class="btn btn-theme" type="button">提交</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- modal -->
+      </div>
+    </div>
+  </div>
+  
+  <div id="regist-page" class="divpage">
+    <div class="container">
+      <div class="panel panel-primary" id="dlg_regist" style="margin-top: 10%;width: 50%;margin-left: 25%;text-align: center;">
+        <h2 class="panel-heading">注册：会议签到系统</h2>
+        <div class="panel-body" style="align-items:center;">
+			<select class="form-control" id="organization">
+				<option value="0">组织</option>
+			</select>
+			<br>
+          <input name="username" type="text" class="form-control" placeholder="账号" autofocus />
+          <br>
+          <input name="password" type="password" class="form-control" placeholder="密码" />
+		  <br>
+          <button class="btn btn-theme btn-block" id="go_regist"><i class="icon icon-lock"></i>注册</button>
+          <hr>
+          <div class="registration">
+            <button class="backhome" href="#">返回</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+	<script src="https://cdn.bootcss.com/zui/1.9.1/lib/jquery/jquery.js"></script>
+	<script src="https://cdn.bootcss.com/zui/1.9.1/js/zui.min.js"></script>
+	<script src="../js/GLs_v3.1.js"></script>
+	<script type="text/javascript" src="../js/login.js"></script>
+</html>

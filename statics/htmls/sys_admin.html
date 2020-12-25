@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-control" content="no-cache">
+    <meta http-equiv="Cache" content="no-cache">
+    <title>系统管理</title>
+	<link href="https://cdn.bootcss.com/zui/1.9.0/css/zui.min.css" rel="stylesheet">
+	<link href="https://cdn.bootcss.com/zui/1.9.1/lib/datetimepicker/datetimepicker.min.css" rel="stylesheet">
+    <style type="text/css">
+		div.separate {margin-bottom: 3px}
+		div.pagebody {padding-top: 5px}
+		button.backhome {float: left}
+		button.backpage {float: left}
+		.filter_toolbar {padding-bottom: 6px}
+    </style>
+</head>
+<body>
+<div class="container">
+	<div class="row">
+		<div class="col-md-12 col-sm-10">
+		
+			<div id="main_page" class="divpage">
+				<!-- list out schools and manage -->
+				<div class="sepbottom">
+					<span style="float: right;margin-right: 1rem;margin-top: -1rem;color:darkcyan;" data-toggle="modal" data-target="#dlg_config">
+						<i class="icon icon-cogs icon-2x img_btn"></i>
+					</span>
+					<h1 style="text-align: center;margin-bottom:30px;">组织管理</h1>
+				</div>
+				<div class="row " style="margin-bottom: 10px;margin-left:4px">
+					<div class="col-md-10 btn-toolbar filter_toolbar">
+						<div class="input-group" id="orgmgm_filter"></div>
+							<div class="btn-group">
+								<button class="btn" title="新增组织" id="btn_add_org"><i class="icon icon-plus-sign"></i></button>
+							</div>
+					</div>
+					<div class="septop">
+						<table id="orgmgm_tbl" class="table">
+							<thead>
+							  <tr>
+								<th>序号</th><th>组织名称</th><th>状态</th><th>备注</th><th>操作</th>
+							  </tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+						<div id="orgmgm_bar"></div>
+					</div>
+				</div>
+				<!-- Dialog in Page -->
+				<div class="modal fade" id="dlg_schooldata">
+				  <div class="modal-dialog">
+					<div class="modal-content">
+					  <div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span><span class="sr-only">操作设置</span></button>
+						<h4 class="modal-title">组织：<span id="orgtitle"></span></h4>
+					  </div>
+					  <div class="modal-body">
+						<form id="frm_school" action="">
+							<input type="text" name="title" class="form-control" placeholder="组织名称">
+							<select name="subtype" class="form-control">
+								<option value="school">智慧校园学校</option>
+								<option value="organize">一般组织</option>
+							</select>
+							<textarea name="extdata" rows="5" placeholder="说明&备注" style="width:100%"></textarea>
+						</form>
+					  </div>
+					  <div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+						<button type="button" class="btn btn-primary  go_submit">提交</button>
+					  </div>
+					</div>
+				  </div>
+				</div>
+			</div>
+			
+			<div id="page2" class="divpage">
+			</div>
+			
+		</div>
+	</div>
+</div>
+<!-- Dialog Session -->
+
+
+</body>
+	<script src="https://cdn.bootcss.com/zui/1.9.1/lib/jquery/jquery.js"></script>
+	<script src="https://cdn.bootcss.com/zui/1.9.1/js/zui.min.js"></script>
+	<script src="../js/GLs_v3.1.js"></script>
+	<script type="text/javascript" src="../js/sysadm.js"></script>
+</html>
